@@ -47,9 +47,6 @@ function AppRoutes() {
     <div className={`font-sans antialiased bg-neutral-50 text-neutral-800 ${dir === 'rtl' ? 'rtl' : ''}`}>
       <Switch>
         <Route path="/login" component={Login} />
-        
-        {/* Public Menu Route - Accessible without login */}
-        <Route path="/menus/:restaurantSlug" component={PublicMenu} />
 
         {/* Protected routes */}
         <Route path="/">
@@ -82,14 +79,61 @@ function AppRoutes() {
   );
 }
 
+function PublicMenuWrapper() {
+  return (
+    <LocaleProvider>
+      <PublicMenu />
+    </LocaleProvider>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <LocaleProvider>
-          <AppRoutes />
-        </LocaleProvider>
-      </AuthProvider>
+      <Switch>
+        {/* Public Menu Route outside AuthProvider - Accessible without login or auth checks */}
+        <Route path="/menus/:restaurantSlug">
+          <PublicMenuWrapper />
+        </Route>
+        
+        {/* All other routes with AuthProvider */}
+        <Route>
+          <AuthProvider>
+            <LocaleProvider>
+              <Switch>
+                <Route path="/login" component={Login} />
+                
+                {/* Protected routes */}
+                <Route path="/">
+                  <ProtectedRoute>
+                    <div className="flex h-screen overflow-hidden">
+                      <Sidebar />
+                      <div className="flex-1 overflow-y-auto">
+                        <Switch>
+                          <Route path="/restaurant/:id/dashboard" component={RestaurantDashboard} />
+                          <Route path="/restaurant/:id/menu" component={MenuEditor} />
+                          <Route path="/restaurant/:id/appearance" component={Appearance} />
+                          <Route path="/restaurant/:id/qr-codes" component={QRCodes} />
+                          <Route path="/restaurant/:id/social-media" component={SocialMedia} />
+                          <Route path="/restaurants" component={Restaurants} />
+                          <Route path="/users" component={Users} />
+                          <Route path="/categories" component={Categories} />
+                          <Route path="/" component={Dashboard} />
+                          <Route component={NotFound} />
+                        </Switch>
+                      </div>
+                    </div>
+                  </ProtectedRoute>
+                </Route>
+                
+                {/* Fallback to 404 */}
+                <Route component={NotFound} />
+              </Switch>
+            </LocaleProvider>
+          </AuthProvider>
+        </Route>
+      </Switch>
+      <Toaster />
     </QueryClientProvider>
   );
 }
