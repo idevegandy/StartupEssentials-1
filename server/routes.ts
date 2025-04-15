@@ -1186,6 +1186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const restaurants = [
           {
             name: 'Falafel House',
+            slug: 'falafel-house',
             address: 'HaHashmonaim 10, Tel Aviv',
             description: 'Authentic falafel and hummus served fresh daily.',
             status: 'active',
@@ -1198,6 +1199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           {
             name: 'Shawarma Palace',
+            slug: 'shawarma-palace',
             address: 'Ben Yehuda 50, Jerusalem',
             description: 'Traditional shawarma and middle eastern cuisine.',
             status: 'active',
@@ -1210,6 +1212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           {
             name: 'Hummus Haven',
+            slug: 'hummus-haven',
             address: 'Rothschild 22, Tel Aviv',
             description: 'The best hummus in town, served with fresh pita.',
             status: 'active',
