@@ -13,6 +13,7 @@ import MenuEditor from "@/pages/menu-editor";
 import Appearance from "@/pages/appearance";
 import QRCodes from "@/pages/qr-codes";
 import SocialMedia from "@/pages/social-media";
+import PublicMenu from "@/pages/public-menu";
 import Login from "@/pages/login";
 import { useLocale, LocaleProvider } from "./contexts/locale-context";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -46,6 +47,9 @@ function AppRoutes() {
     <div className={`font-sans antialiased bg-neutral-50 text-neutral-800 ${dir === 'rtl' ? 'rtl' : ''}`}>
       <Switch>
         <Route path="/login" component={Login} />
+        
+        {/* Public Menu Route - Accessible without login */}
+        <Route path="/menus/:restaurantId" component={PublicMenu} />
 
         {/* Protected routes */}
         <Route path="/">

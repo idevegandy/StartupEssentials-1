@@ -19,6 +19,7 @@ export const users = pgTable("users", {
 export const restaurants = pgTable("restaurants", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  slug: text("slug"), // URL-friendly slug for the restaurant
   description: text("description"),
   logo: text("logo"), // URL to logo image
   phone: text("phone"),
