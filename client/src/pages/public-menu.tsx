@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, AlertTriangle } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,6 +42,7 @@ interface SocialMediaLink {
 interface Restaurant {
   id: number;
   name: string;
+  slug: string | null;
   description: string | null;
   logo: string | null;
   primaryColor: string | null;
@@ -58,9 +59,14 @@ interface PublicMenuData {
 }
 
 const PublicMenu: React.FC = () => {
-  const [, params] = useRoute<{ restaurantId: string }>("/menus/:restaurantId");
-  const restaurantId = params?.restaurantId;
+  const [, setLocation] = useLocation();
+  const [, params] = useRoute<{ restaurantSlug: string }>("/menus/:restaurantSlug");
+  const restaurantSlug = params?.restaurantSlug;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Check if the slug is actually a number (ID)
+  const isId = restaurantSlug && !isNaN(Number(restaurantSlug));
+  const restaurantId = isId ? Number(restaurantSlug) : null;
 
   // Fetch public menu data
   const { data, isLoading, error } = useQuery<PublicMenuData>({

@@ -49,7 +49,7 @@ function AppRoutes() {
         <Route path="/login" component={Login} />
         
         {/* Public Menu Route - Accessible without login */}
-        <Route path="/menus/:restaurantId" component={PublicMenu} />
+        <Route path="/menus/:restaurantSlug" component={PublicMenu} />
 
         {/* Protected routes */}
         <Route path="/">
