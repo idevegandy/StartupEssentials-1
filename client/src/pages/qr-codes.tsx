@@ -141,7 +141,7 @@ export default function QRCodes() {
       try {
         await navigator.share({
           title: restaurant.name,
-          text: t("menu_share_text", restaurant.name),
+          text: `${t("menu_share_text")} ${restaurant.name}`,
           url,
         });
       } catch (error) {
