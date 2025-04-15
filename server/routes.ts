@@ -1225,14 +1225,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         ];
 
+        // Create or get restaurants with sample data
+        const createdRestaurants = [];
         for (const restaurantData of restaurants) {
           // Check if restaurant already exists
           const existingRestaurants = await db.select()
             .from(schema.restaurants)
             .where(eq(schema.restaurants.name, restaurantData.name));
           
+          let restaurant;
           if (existingRestaurants.length === 0) {
-            const restaurant = await storage.createRestaurant(restaurantData);
+            restaurant = await storage.createRestaurant(restaurantData);
             
             // Log activity without user ID for seed data
             await storage.createActivityLog({
@@ -1242,6 +1245,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
               details: { name: restaurant.name },
               entityType: 'restaurant',
               entityId: restaurant.id
+            });
+          } else {
+            restaurant = existingRestaurants[0];
+          }
+          createdRestaurants.push(restaurant);
+        }
+        
+        // Add sample categories and menu items for the first restaurant (Falafel House)
+        if (createdRestaurants.length > 0) {
+          const falafelHouse = createdRestaurants[0];
+          
+          // Get existing categories
+          const existingCategories = await storage.getCategoriesByRestaurantId(falafelHouse.id);
+          
+          // Only add categories if there aren't any yet
+          if (existingCategories.length === 0) {
+            // Create categories
+            const categories = [
+              {
+                name: 'Appetizers',
+                description: 'Starters and small plates',
+                icon: 'utensils',
+                displayOrder: 1,
+                restaurantId: falafelHouse.id
+              },
+              {
+                name: 'Main Dishes',
+                description: 'Our signature dishes',
+                icon: 'coffee',
+                displayOrder: 2,
+                restaurantId: falafelHouse.id
+              },
+              {
+                name: 'Drinks',
+                description: 'Refreshing beverages',
+                icon: 'wine-glass',
+                displayOrder: 3,
+                restaurantId: falafelHouse.id
+              }
+            ];
+            
+            for (const categoryData of categories) {
+              const category = await storage.createCategory(categoryData);
+              
+              // Create menu items for each category
+              if (category.name === 'Appetizers') {
+                await storage.createMenuItem({
+                  name: 'Hummus',
+                  description: 'Creamy chickpea dip with olive oil and tahini',
+                  price: 25,
+                  image: 'https://images.unsplash.com/photo-1594112238875-9f239c0a0901',
+                  featured: true,
+                  categoryId: category.id,
+                  restaurantId: falafelHouse.id
+                });
+                
+                await storage.createMenuItem({
+                  name: 'Falafel Plate',
+                  description: '5 pieces of our signature falafel with tahini',
+                  price: 30,
+                  image: 'https://images.unsplash.com/photo-1576490233570-1952c27e5fd6',
+                  featured: true,
+                  categoryId: category.id,
+                  restaurantId: falafelHouse.id
+                });
+              } else if (category.name === 'Main Dishes') {
+                await storage.createMenuItem({
+                  name: 'Falafel Pita',
+                  description: 'Fresh pita bread filled with falafel, vegetables and tahini',
+                  price: 35,
+                  discountPrice: 30,
+                  image: 'https://images.unsplash.com/photo-1572564349685-7390d0f3e2ed',
+                  featured: true,
+                  categoryId: category.id,
+                  restaurantId: falafelHouse.id
+                });
+                
+                await storage.createMenuItem({
+                  name: 'Sabich Plate',
+                  description: 'Roasted eggplant, hard-boiled eggs, tahini and amba sauce',
+                  price: 40,
+                  image: 'https://media.istockphoto.com/id/1178158072/photo/sabich.jpg',
+                  featured: false,
+                  categoryId: category.id,
+                  restaurantId: falafelHouse.id
+                });
+              } else if (category.name === 'Drinks') {
+                await storage.createMenuItem({
+                  name: 'Freshly Squeezed Orange Juice',
+                  description: 'Made with seasonal oranges',
+                  price: 15,
+                  featured: false,
+                  categoryId: category.id,
+                  restaurantId: falafelHouse.id
+                });
+                
+                await storage.createMenuItem({
+                  name: 'Mint Lemonade',
+                  description: 'Fresh lemons with mint leaves',
+                  price: 18,
+                  featured: true,
+                  categoryId: category.id,
+                  restaurantId: falafelHouse.id
+                });
+              }
+            }
+            
+            // Add social media links
+            await storage.createSocialMediaLink({
+              platform: 'facebook',
+              url: 'https://facebook.com/falafelhouse',
+              restaurantId: falafelHouse.id
+            });
+            
+            await storage.createSocialMediaLink({
+              platform: 'instagram',
+              url: 'https://instagram.com/falafelhouse',
+              restaurantId: falafelHouse.id
+            });
+            
+            await storage.createSocialMediaLink({
+              platform: 'whatsapp',
+              url: 'https://wa.me/97235551234',
+              restaurantId: falafelHouse.id
             });
           }
         }
