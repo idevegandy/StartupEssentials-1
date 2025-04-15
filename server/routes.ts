@@ -1164,7 +1164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Dev route to add some initial test data (only in development)
   if (process.env.NODE_ENV !== 'production') {
-    app.post('/api/dev/seed-test-data', authMiddleware, superAdminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    app.post('/api/dev/seed-test-data', async (req: Request, res: Response) => {
       try {
         // Create restaurant admin if doesn't exist
         const adminExists = await storage.getUserByUsername('restaurant_admin');
@@ -1234,9 +1234,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (existingRestaurants.length === 0) {
             const restaurant = await storage.createRestaurant(restaurantData);
             
-            // Log activity
+            // Log activity without user ID for seed data
             await storage.createActivityLog({
-              userId: req.user?.id,
+              userId: null,
               action: 'create_restaurant',
               restaurantId: restaurant.id,
               details: { name: restaurant.name },
