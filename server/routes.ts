@@ -1052,7 +1052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public Restaurant Menu Route - no authentication required
+  // Public Restaurant Menu Route by ID - no authentication required
   app.get('/api/public/restaurants/:restaurantId/menu', async (req: Request, res: Response) => {
     try {
       const restaurantId = parseInt(req.params.restaurantId);
@@ -1088,6 +1088,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         restaurant: {
           id: restaurant.id,
           name: restaurant.name,
+          slug: restaurant.slug,
+          description: restaurant.description,
+          logo: restaurant.logo,
+          primaryColor: restaurant.primaryColor,
+          secondaryColor: restaurant.secondaryColor,
+          rtl: restaurant.rtl,
+          phone: restaurant.phone,
+          address: restaurant.address
+        },
+        categories: categorizedMenu,
+        socialMediaLinks
+      };
+      
+      res.json(publicMenu);
+    } catch (error) {
+      console.error('Get public menu error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Public Restaurant Menu Route by Slug - no authentication required
+  app.get('/api/public/restaurants/by-slug/:slug/menu', async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      
+      const restaurant = await storage.getRestaurantBySlug(slug);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+      
+      // Only return active restaurants
+      if (restaurant.status !== 'active') {
+        return res.status(404).json({ message: "Restaurant menu not available" });
+      }
+      
+      const restaurantId = restaurant.id;
+      const categories = await storage.getCategoriesByRestaurantId(restaurantId);
+      const menuItems = await storage.getMenuItemsByRestaurantId(restaurantId);
+      const socialMediaLinks = await storage.getSocialMediaLinksByRestaurantId(restaurantId);
+      
+      // Group menu items by category
+      const categorizedMenu = categories.map(category => {
+        const items = menuItems.filter(item => item.categoryId === category.id);
+        return {
+          ...category,
+          items
+        };
+      });
+      
+      // Create the public menu response
+      const publicMenu = {
+        restaurant: {
+          id: restaurant.id,
+          name: restaurant.name,
+          slug: restaurant.slug,
           description: restaurant.description,
           logo: restaurant.logo,
           primaryColor: restaurant.primaryColor,

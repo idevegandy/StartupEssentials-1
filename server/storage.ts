@@ -148,6 +148,10 @@ export class MemStorage implements IStorage {
   async getRestaurant(id: number): Promise<Restaurant | undefined> {
     return this.restaurants.get(id);
   }
+  
+  async getRestaurantBySlug(slug: string): Promise<Restaurant | undefined> {
+    return Array.from(this.restaurants.values()).find(restaurant => restaurant.slug === slug);
+  }
 
   async createRestaurant(restaurantData: InsertRestaurant): Promise<Restaurant> {
     const id = this.restaurantIdCounter++;
@@ -155,6 +159,7 @@ export class MemStorage implements IStorage {
     const restaurant: Restaurant = {
       ...restaurantData,
       // Ensure all required fields have values
+      slug: restaurantData.slug || null,
       address: restaurantData.address || null,
       phone: restaurantData.phone || null,
       email: restaurantData.email || null,
@@ -424,6 +429,11 @@ export class DatabaseStorage implements IStorage {
   // Restaurant operations
   async getRestaurant(id: number): Promise<Restaurant | undefined> {
     const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, id));
+    return restaurant;
+  }
+  
+  async getRestaurantBySlug(slug: string): Promise<Restaurant | undefined> {
+    const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.slug, slug));
     return restaurant;
   }
 

@@ -70,8 +70,20 @@ const PublicMenu: React.FC = () => {
 
   // Fetch public menu data
   const { data, isLoading, error } = useQuery<PublicMenuData>({
-    queryKey: ["/api/public/restaurants", restaurantId, "menu"],
-    enabled: !!restaurantId,
+    queryKey: isId 
+      ? ["/api/public/restaurants", restaurantId, "menu"] 
+      : ["/api/public/restaurants/by-slug", restaurantSlug, "menu"],
+    enabled: !!restaurantSlug,
+    queryFn: async ({ queryKey }) => {
+      const url = isId
+        ? `/api/public/restaurants/${restaurantId}/menu`
+        : `/api/public/restaurants/by-slug/${restaurantSlug}/menu`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch restaurant menu');
+      }
+      return response.json();
+    }
   });
 
   useEffect(() => {

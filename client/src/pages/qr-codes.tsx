@@ -66,7 +66,9 @@ export default function QRCodes() {
   // Generate menu URL for QR code
   const getMenuUrl = (restaurant: Restaurant) => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/menus/${restaurantId}`;
+    // Use slug if available, otherwise use ID
+    const urlPath = restaurant.slug ? restaurant.slug : restaurantId;
+    return `${baseUrl}/menus/${urlPath}`;
   };
 
   // Handle QR code creation
