@@ -1,0 +1,165 @@
+✅ Project Objective:
+Each restaurant must have one and only one responsive public menu page (under /menus/{slug}) with RTL layout, which includes:
+
+Restaurant logo
+
+Categories with icons
+
+Menu items (with name, image, short description, and price in shekels ₪)
+
+Social links
+
+Custom colors (background, button colors)
+
+QR code generation for the public menu page
+
+Shareable link for public access
+
+✅ Key Roles:
+1. Super Admin
+Has full access to everything
+
+Can add, edit, or delete any restaurant or admin user
+
+Can see and manage all restaurant data
+
+Can access "פעולות" (Actions) for each restaurant
+
+2. Restaurant Admin (Owner)
+Can manage only their own restaurant
+
+Limited to controlling:
+
+Their own menu page
+
+Logo
+
+Categories and items
+
+Social links
+
+Color customization
+
+Cannot access or see any other restaurants or admins
+
+✅ Required Fixes and Features:
+🔧 General Fixes:
+Fix the system so it successfully generates the restaurant's public menu page.
+
+Public menu page must be:
+
+Responsive
+
+RTL styled
+
+Creative and light on mobile
+
+Includes smooth animations/slides or transitions for categories and items
+
+Visually clean and user-friendly
+
+🧑‍💼 Super Admin Panel:
+The "Add Restaurant" function must work properly — and be available only to Super Admin:
+
+When Super Admin adds a restaurant, it automatically creates:
+
+A new restaurant admin user
+
+A single public menu page tied to that admin (no multiple menus)
+
+The "פעולות" (Actions) button must:
+
+Show admin email and password (if available)
+
+Allow Super Admin to edit or delete the restaurant admin
+
+Remove or hide Users and Categories from the Super Admin's sidebar (these are managed within each restaurant)
+
+Super Admin can view and control all restaurants
+
+👤 Restaurant Admin Panel:
+Each restaurant admin can:
+
+Edit their restaurant’s logo
+
+Add/edit/delete categories, each with:
+
+Icon
+
+Category name
+
+Add/edit/delete menu items, each with:
+
+Item image
+
+Item name
+
+Short description
+
+Price (₪)
+
+Add/edit social media links
+
+Customize the public menu page colors (background, buttons)
+
+View and use their restaurant QR code and menu link
+
+Restaurant admin cannot:
+
+Create multiple menus
+
+View or manage any other restaurants
+
+Access any Super Admin features
+
+🧾 Public Menu Page (/menus/{slug}):
+Must include:
+
+Restaurant name and logo
+
+Custom theme color and background
+
+Responsive layout with smooth mobile animations
+
+Sections by category (with icons)
+
+Each item showing image, name, description, and ₪ price
+
+QR code for quick access
+
+Social media buttons
+
+RTL support is required throughout
+
+Menu must be visually appealing and lightweight
+
+🔐 Permissions:
+Super Admin: Full access to everything
+
+Restaurant Admins:
+
+Access only their own content
+
+Strictly cannot view or edit other restaurants
+
+Role-based middleware must be enforced throughout
+
+💾 Summary:
+You're working on two roles and two panels:
+
+Super Admin Panel (full control)
+
+Restaurant Admin Panel (limited to their own restaurant)
+
+Be sure to:
+
+Fix all broken parts
+
+Complete missing features
+
+Implement proper RBAC (Role-Based Access Control)
+
+Generate QR code and public menu link
+
+Focus on clean, mobile-first UI with smooth transitions and animations
+
