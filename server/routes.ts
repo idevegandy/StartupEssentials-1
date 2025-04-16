@@ -7,6 +7,9 @@ import { eq } from "drizzle-orm";
 import * as schema from "../shared/schema";
 import session from 'express-session';
 import memorystore from 'memorystore';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import {
   insertUserSchema,
   insertRestaurantSchema,
@@ -95,6 +98,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     resave: false,
     saveUninitialized: false
   }));
+  
+  // Configure multer for file uploads
+  const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      const uploadDir = path.join(process.cwd(), 'uploads/images');
+      // Create directory if it doesn't exist
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      // Create a unique filename using timestamp and original extension
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    }
+  });
+  
+  // File filter to only allow images
+  const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    // Accept only images
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(null, false);
+    }
+  };
+  
+  const upload = multer({ 
+    storage, 
+    fileFilter,
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB max file size
+    }
+  });
 
   // Authentication Routes
   app.post('/api/auth/login', async (req: Request, res: Response) => {
