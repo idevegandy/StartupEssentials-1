@@ -67,18 +67,7 @@ export default function AuthPage() {
     alert('הרשמה אינה זמינה ישירות. מנהלי מסעדות נוצרים על ידי מנהל מערכת ראשי.');
   };
 
-  // Add helper functions for dev login
-  const loginAsSuperAdmin = () => {
-    loginForm.setValue("email", "superadmin@example.com");
-    loginForm.setValue("password", "SuperSecure123");
-    loginForm.handleSubmit(onSubmitLogin)();
-  };
-
-  const loginAsRestaurantAdmin = () => {
-    loginForm.setValue("email", "admin+falafel-express@example.com");
-    loginForm.setValue("password", "Admin1234");
-    loginForm.handleSubmit(onSubmitLogin)();
-  };
+  // No helper functions for dev login in production
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4" dir="rtl">
@@ -142,29 +131,7 @@ export default function AuthPage() {
                     )}
                   </Button>
 
-                  {/* Quick login buttons without heading */}
-                  <div className="pt-4 border-t mt-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={loginAsSuperAdmin}
-                        className="text-xs"
-                      >
-                        מנהל מערכת
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={loginAsRestaurantAdmin}
-                        className="text-xs"
-                      >
-                        מנהל מסעדה
-                      </Button>
-                    </div>
-                  </div>
+
                 </form>
               </Form>
             </TabsContent>
