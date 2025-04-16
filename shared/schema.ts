@@ -1,80 +1,137 @@
-import { pgTable, text, serial, integer, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { pgTable, text, serial, integer, boolean, timestamp, uniqueIndex, json, foreignKey, pgEnum } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
 import { z } from "zod";
 
-// Enums
-export const userRoleEnum = pgEnum('user_role', ['super_admin', 'restaurant_admin']);
-export const restaurantStatusEnum = pgEnum('restaurant_status', ['active', 'pending', 'inactive']);
+// Role enum for user types
+export const roleEnum = pgEnum('role', ['super_admin', 'restaurant_admin']);
 
-// User schema
+// Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  role: userRoleEnum("role").notNull().default('restaurant_admin'),
-  restaurantId: integer("restaurant_id").references(() => restaurants.id, { onDelete: 'cascade' }),
-  createdAt: timestamp("created_at").defaultNow(),
+  role: roleEnum("role").notNull().default('restaurant_admin'),
+  restaurantId: integer("restaurant_id").references(() => restaurants.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Restaurant schema
+// Users relationships
+export const usersRelations = relations(users, ({ one }) => ({
+  restaurant: one(restaurants, {
+    fields: [users.restaurantId],
+    references: [restaurants.id],
+    relationName: "restaurant_admin"
+  }),
+}));
+
+// Restaurants table
 export const restaurants = pgTable("restaurants", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   logo: text("logo"),
-  status: restaurantStatusEnum("status").notNull().default('active'),
-  primaryColor: text("primary_color").default('#3b82f6'),
-  backgroundColor: text("background_color").default('#ffffff'),
-  facebook: text("facebook"),
-  instagram: text("instagram"),
-  whatsapp: text("whatsapp"),
-  createdAt: timestamp("created_at").defaultNow(),
+  primaryColor: text("primary_color").default("#14b8a6"),
+  backgroundColor: text("background_color").default("#ffffff"),
+  facebookLink: text("facebook_link"),
+  instagramLink: text("instagram_link"),
+  websiteLink: text("website_link"),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    slugIdx: uniqueIndex("restaurant_slug_idx").on(table.slug),
+  };
 });
 
-// Category schema
+// Restaurant relationships
+export const restaurantsRelations = relations(restaurants, ({ many, one }) => ({
+  categories: many(categories),
+  admin: many(users, { relationName: "restaurant_admin" }),
+}));
+
+// Categories table
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  icon: text("icon"),
+  icon: text("icon").default("utensils"),
+  displayOrder: integer("display_order").default(0),
   restaurantId: integer("restaurant_id").notNull().references(() => restaurants.id, { onDelete: 'cascade' }),
-  order: integer("order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Menu item schema
-export const menuItems = pgTable("menu_items", {
+// Category relationships
+export const categoriesRelations = relations(categories, ({ one, many }) => ({
+  restaurant: one(restaurants, {
+    fields: [categories.restaurantId],
+    references: [restaurants.id],
+  }),
+  items: many(items),
+}));
+
+// Items table
+export const items = pgTable("items", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  price: text("price").notNull(),
+  price: integer("price").notNull(), // Price in cents
   image: text("image"),
   categoryId: integer("category_id").notNull().references(() => categories.id, { onDelete: 'cascade' }),
-  restaurantId: integer("restaurant_id").notNull().references(() => restaurants.id, { onDelete: 'cascade' }),
-  order: integer("order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Item relationships
+export const itemsRelations = relations(items, ({ one }) => ({
+  category: one(categories, {
+    fields: [items.categoryId],
+    references: [categories.id],
+  }),
+}));
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export const insertRestaurantSchema = createInsertSchema(restaurants).omit({ id: true, createdAt: true });
-export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
-export const insertMenuItemSchema = createInsertSchema(menuItems).omit({ id: true, createdAt: true });
-
-// Login schema
-export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
+export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCategorySchema = createInsertSchema(categories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertItemSchema = createInsertSchema(items).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Select schemas
+export const selectUserSchema = createSelectSchema(users);
+export const selectRestaurantSchema = createSelectSchema(restaurants);
+export const selectCategorySchema = createSelectSchema(categories);
+export const selectItemSchema = createSelectSchema(items);
+
 // Types
-export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type Restaurant = typeof restaurants.$inferSelect;
 export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;
-export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
-export type MenuItem = typeof menuItems.$inferSelect;
-export type InsertMenuItem = z.infer<typeof insertMenuItemSchema>;
-export type LoginCredentials = z.infer<typeof loginSchema>;
+export type InsertItem = z.infer<typeof insertItemSchema>;
+
+export type User = typeof users.$inferSelect;
+export type Restaurant = typeof restaurants.$inferSelect;
+export type Category = typeof categories.$inferSelect;
+export type Item = typeof items.$inferSelect;

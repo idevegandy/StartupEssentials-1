@@ -1,309 +1,226 @@
-import { restaurants, categories, menuItems, users, type User, type InsertUser, type Restaurant, type InsertRestaurant, type Category, type InsertCategory, type MenuItem, type InsertMenuItem } from "@shared/schema";
+import { users, restaurants, categories, items, type User, type InsertUser, type Restaurant, type InsertRestaurant, type Category, type InsertCategory, type Item, type InsertItem } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, asc, desc, isNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { db } from "./db";
 import { pool } from "./db";
-import { eq, and } from "drizzle-orm";
 
-// Use Postgres for sessions
 const PostgresSessionStore = connectPg(session);
 
-// Storage interface
 export interface IStorage {
-  // User related methods
+  // Session store
+  sessionStore: session.SessionStore;
+  
+  // User operations
   getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
+  updateUser(id: number, data: Partial<Omit<InsertUser, 'password'>>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
   
-  // Restaurant related methods
+  // Restaurant operations
   getRestaurant(id: number): Promise<Restaurant | undefined>;
   getRestaurantBySlug(slug: string): Promise<Restaurant | undefined>;
-  getAllRestaurants(): Promise<Restaurant[]>;
+  getRestaurants(): Promise<Restaurant[]>;
   createRestaurant(restaurant: InsertRestaurant): Promise<Restaurant>;
-  updateRestaurant(id: number, restaurant: Partial<Restaurant>): Promise<Restaurant | undefined>;
+  updateRestaurant(id: number, data: Partial<InsertRestaurant>): Promise<Restaurant | undefined>;
   deleteRestaurant(id: number): Promise<boolean>;
+  getRestaurantAdmin(restaurantId: number): Promise<User | undefined>;
   
-  // Category related methods
+  // Category operations
+  getCategories(restaurantId: number): Promise<Category[]>;
   getCategory(id: number): Promise<Category | undefined>;
-  getCategoriesByRestaurantId(restaurantId: number): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
-  updateCategory(id: number, category: Partial<Category>): Promise<Category | undefined>;
+  updateCategory(id: number, data: Partial<InsertCategory>): Promise<Category | undefined>;
   deleteCategory(id: number): Promise<boolean>;
   
-  // MenuItem related methods
-  getMenuItem(id: number): Promise<MenuItem | undefined>;
-  getMenuItemsByCategoryId(categoryId: number): Promise<MenuItem[]>;
-  getMenuItemsByRestaurantId(restaurantId: number): Promise<MenuItem[]>;
-  createMenuItem(menuItem: InsertMenuItem): Promise<MenuItem>;
-  updateMenuItem(id: number, menuItem: Partial<MenuItem>): Promise<MenuItem | undefined>;
-  deleteMenuItem(id: number): Promise<boolean>;
-  
-  // Session store
-  sessionStore: any;
+  // Item operations
+  getItems(categoryId: number): Promise<Item[]>;
+  getItemsByRestaurant(restaurantId: number): Promise<Item[]>;
+  getItem(id: number): Promise<Item | undefined>;
+  createItem(item: InsertItem): Promise<Item>;
+  updateItem(id: number, data: Partial<InsertItem>): Promise<Item | undefined>;
+  deleteItem(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: any;
-
+  sessionStore: session.SessionStore;
+  
   constructor() {
     this.sessionStore = new PostgresSessionStore({
       pool,
       createTableIfMissing: true
     });
   }
-
+  
+  // User operations
   async getUser(id: number): Promise<User | undefined> {
-    try {
-      console.log(`[storage] Getting user with ID: ${id}`);
-      const result = await db.select().from(users).where(eq(users.id, id));
-      
-      if (result.length === 0) {
-        console.log(`[storage] No user found with ID: ${id}`);
-        return undefined;
-      }
-      
-      console.log(`[storage] Found user: ${result[0].username}, role: ${result[0].role}`);
-      return result[0];
-    } catch (error) {
-      console.error("[storage] Error getting user:", error);
-      return undefined;
-    }
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    try {
-      const result = await db.select().from(users).where(eq(users.username, username));
-      return result[0];
-    } catch (error) {
-      console.error("Error getting user by username:", error);
-      return undefined;
-    }
-  }
-
+  
   async getUserByEmail(email: string): Promise<User | undefined> {
-    try {
-      const result = await db.select().from(users).where(eq(users.email, email));
-      return result[0];
-    } catch (error) {
-      console.error("Error getting user by email:", error);
-      return undefined;
-    }
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
-
+  
   async createUser(insertUser: InsertUser): Promise<User> {
-    try {
-      const result = await db.insert(users).values(insertUser).returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error creating user:", error);
-      throw error;
-    }
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
   }
-
-  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
-    try {
-      const result = await db.update(users)
-        .set(userData)
-        .where(eq(users.id, id))
-        .returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error updating user:", error);
-      return undefined;
-    }
+  
+  async updateUser(id: number, data: Partial<Omit<InsertUser, 'password'>>): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({...data, updatedAt: new Date()})
+      .where(eq(users.id, id))
+      .returning();
+    return user;
   }
-
+  
   async deleteUser(id: number): Promise<boolean> {
-    try {
-      const result = await db.delete(users).where(eq(users.id, id)).returning();
-      return result.length > 0;
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      return false;
-    }
+    const result = await db
+      .delete(users)
+      .where(eq(users.id, id));
+    return true;
   }
-
+  
+  // Restaurant operations
   async getRestaurant(id: number): Promise<Restaurant | undefined> {
-    try {
-      const result = await db.select().from(restaurants).where(eq(restaurants.id, id));
-      return result[0];
-    } catch (error) {
-      console.error("Error getting restaurant:", error);
-      return undefined;
-    }
+    const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, id));
+    return restaurant;
   }
-
+  
   async getRestaurantBySlug(slug: string): Promise<Restaurant | undefined> {
-    try {
-      const result = await db.select().from(restaurants).where(eq(restaurants.slug, slug));
-      return result[0];
-    } catch (error) {
-      console.error("Error getting restaurant by slug:", error);
-      return undefined;
-    }
+    const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.slug, slug));
+    return restaurant;
   }
-
-  async getAllRestaurants(): Promise<Restaurant[]> {
-    try {
-      return await db.select().from(restaurants);
-    } catch (error) {
-      console.error("Error getting all restaurants:", error);
-      return [];
-    }
+  
+  async getRestaurants(): Promise<Restaurant[]> {
+    return await db.select().from(restaurants).orderBy(desc(restaurants.createdAt));
   }
-
+  
   async createRestaurant(insertRestaurant: InsertRestaurant): Promise<Restaurant> {
-    try {
-      const result = await db.insert(restaurants).values(insertRestaurant).returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error creating restaurant:", error);
-      throw error;
-    }
+    const [restaurant] = await db
+      .insert(restaurants)
+      .values(insertRestaurant)
+      .returning();
+    return restaurant;
   }
-
-  async updateRestaurant(id: number, restaurantData: Partial<Restaurant>): Promise<Restaurant | undefined> {
-    try {
-      const result = await db.update(restaurants)
-        .set(restaurantData)
-        .where(eq(restaurants.id, id))
-        .returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error updating restaurant:", error);
-      return undefined;
-    }
+  
+  async updateRestaurant(id: number, data: Partial<InsertRestaurant>): Promise<Restaurant | undefined> {
+    const [restaurant] = await db
+      .update(restaurants)
+      .set({...data, updatedAt: new Date()})
+      .where(eq(restaurants.id, id))
+      .returning();
+    return restaurant;
   }
-
+  
   async deleteRestaurant(id: number): Promise<boolean> {
-    try {
-      // First delete all related users
-      await db.delete(users).where(eq(users.restaurantId, id));
-      
-      // Then delete the restaurant (categories and menu items will be deleted by cascade)
-      const result = await db.delete(restaurants).where(eq(restaurants.id, id)).returning();
-      return result.length > 0;
-    } catch (error) {
-      console.error("Error deleting restaurant:", error);
-      return false;
-    }
+    await db.delete(restaurants).where(eq(restaurants.id, id));
+    return true;
   }
-
+  
+  async getRestaurantAdmin(restaurantId: number): Promise<User | undefined> {
+    const [admin] = await db
+      .select()
+      .from(users)
+      .where(and(
+        eq(users.restaurantId, restaurantId),
+        eq(users.role, 'restaurant_admin')
+      ));
+    return admin;
+  }
+  
+  // Category operations
+  async getCategories(restaurantId: number): Promise<Category[]> {
+    return await db
+      .select()
+      .from(categories)
+      .where(eq(categories.restaurantId, restaurantId))
+      .orderBy(asc(categories.displayOrder));
+  }
+  
   async getCategory(id: number): Promise<Category | undefined> {
-    try {
-      const result = await db.select().from(categories).where(eq(categories.id, id));
-      return result[0];
-    } catch (error) {
-      console.error("Error getting category:", error);
-      return undefined;
-    }
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category;
   }
-
-  async getCategoriesByRestaurantId(restaurantId: number): Promise<Category[]> {
-    try {
-      return await db.select().from(categories).where(eq(categories.restaurantId, restaurantId));
-    } catch (error) {
-      console.error("Error getting categories by restaurant ID:", error);
-      return [];
-    }
-  }
-
+  
   async createCategory(insertCategory: InsertCategory): Promise<Category> {
-    try {
-      const result = await db.insert(categories).values(insertCategory).returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error creating category:", error);
-      throw error;
-    }
+    const [category] = await db
+      .insert(categories)
+      .values(insertCategory)
+      .returning();
+    return category;
   }
-
-  async updateCategory(id: number, categoryData: Partial<Category>): Promise<Category | undefined> {
-    try {
-      const result = await db.update(categories)
-        .set(categoryData)
-        .where(eq(categories.id, id))
-        .returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error updating category:", error);
-      return undefined;
-    }
+  
+  async updateCategory(id: number, data: Partial<InsertCategory>): Promise<Category | undefined> {
+    const [category] = await db
+      .update(categories)
+      .set({...data, updatedAt: new Date()})
+      .where(eq(categories.id, id))
+      .returning();
+    return category;
   }
-
+  
   async deleteCategory(id: number): Promise<boolean> {
-    try {
-      // Menu items will be deleted by cascade
-      const result = await db.delete(categories).where(eq(categories.id, id)).returning();
-      return result.length > 0;
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      return false;
-    }
+    await db.delete(categories).where(eq(categories.id, id));
+    return true;
   }
-
-  async getMenuItem(id: number): Promise<MenuItem | undefined> {
-    try {
-      const result = await db.select().from(menuItems).where(eq(menuItems.id, id));
-      return result[0];
-    } catch (error) {
-      console.error("Error getting menu item:", error);
-      return undefined;
-    }
+  
+  // Item operations
+  async getItems(categoryId: number): Promise<Item[]> {
+    return await db
+      .select()
+      .from(items)
+      .where(eq(items.categoryId, categoryId))
+      .orderBy(asc(items.displayOrder));
   }
-
-  async getMenuItemsByCategoryId(categoryId: number): Promise<MenuItem[]> {
-    try {
-      return await db.select().from(menuItems).where(eq(menuItems.categoryId, categoryId));
-    } catch (error) {
-      console.error("Error getting menu items by category ID:", error);
-      return [];
-    }
+  
+  async getItemsByRestaurant(restaurantId: number): Promise<Item[]> {
+    const restaurantCategories = await this.getCategories(restaurantId);
+    const categoryIds = restaurantCategories.map(cat => cat.id);
+    
+    if (categoryIds.length === 0) return [];
+    
+    return await db
+      .select()
+      .from(items)
+      .where(
+        categoryIds.map(id => eq(items.categoryId, id)).reduce((acc, curr) => curr)
+      )
+      .orderBy(asc(items.displayOrder));
   }
-
-  async getMenuItemsByRestaurantId(restaurantId: number): Promise<MenuItem[]> {
-    try {
-      return await db.select().from(menuItems).where(eq(menuItems.restaurantId, restaurantId));
-    } catch (error) {
-      console.error("Error getting menu items by restaurant ID:", error);
-      return [];
-    }
+  
+  async getItem(id: number): Promise<Item | undefined> {
+    const [item] = await db.select().from(items).where(eq(items.id, id));
+    return item;
   }
-
-  async createMenuItem(insertMenuItem: InsertMenuItem): Promise<MenuItem> {
-    try {
-      const result = await db.insert(menuItems).values(insertMenuItem).returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error creating menu item:", error);
-      throw error;
-    }
+  
+  async createItem(insertItem: InsertItem): Promise<Item> {
+    const [item] = await db
+      .insert(items)
+      .values(insertItem)
+      .returning();
+    return item;
   }
-
-  async updateMenuItem(id: number, menuItemData: Partial<MenuItem>): Promise<MenuItem | undefined> {
-    try {
-      const result = await db.update(menuItems)
-        .set(menuItemData)
-        .where(eq(menuItems.id, id))
-        .returning();
-      return result[0];
-    } catch (error) {
-      console.error("Error updating menu item:", error);
-      return undefined;
-    }
+  
+  async updateItem(id: number, data: Partial<InsertItem>): Promise<Item | undefined> {
+    const [item] = await db
+      .update(items)
+      .set({...data, updatedAt: new Date()})
+      .where(eq(items.id, id))
+      .returning();
+    return item;
   }
-
-  async deleteMenuItem(id: number): Promise<boolean> {
-    try {
-      const result = await db.delete(menuItems).where(eq(menuItems.id, id)).returning();
-      return result.length > 0;
-    } catch (error) {
-      console.error("Error deleting menu item:", error);
-      return false;
-    }
+  
+  async deleteItem(id: number): Promise<boolean> {
+    await db.delete(items).where(eq(items.id, id));
+    return true;
   }
 }
 

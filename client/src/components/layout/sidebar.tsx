@@ -1,135 +1,138 @@
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
-import { Link } from "wouter";
 import { cn } from "@/lib/utils";
-
-// Icons
-import { 
-  LayoutDashboard,
-  Store,
-  Settings,
-  User,
-  Tags,
-  List,
-  Palette,
-  QrCode,
-  LogOut
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Moon, Sun, X, Menu } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface SidebarProps {
-  isOpen: boolean;
-  closeSidebar: () => void;
+  isMobile: boolean;
+  setIsMobileOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
-  const { user, logoutMutation } = useAuth();
+export default function Sidebar({ isMobile, setIsMobileOpen }: SidebarProps) {
   const [location] = useLocation();
-
-  const isSuperAdmin = user?.role === "super_admin";
-  const isRestaurantAdmin = user?.role === "restaurant_admin";
-
-  const sidebarClass = cn(
-    "flex flex-col w-64 bg-white shadow transition-transform duration-200 fixed inset-y-0 z-50 md:relative rtl:md:translate-x-0 ltr:md:translate-x-0",
-    {
-      "rtl:translate-x-0 ltr:translate-x-0": isOpen,
-      "rtl:-translate-x-full ltr:translate-x-full": !isOpen,
+  const { user, logoutMutation } = useAuth();
+  const { toast } = useToast();
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkMode') === 'true';
     }
-  );
+    return false;
+  });
 
-  const superAdminLinks = [
-    { href: "/", icon: <LayoutDashboard className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "לוח מחוונים" },
-    { href: "/restaurants", icon: <Store className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "רשימת מסעדות" },
-    { href: "/settings", icon: <Settings className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "הגדרות" },
-    { href: "/profile", icon: <User className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "פרופיל" },
-  ];
-
-  const restaurantAdminLinks = [
-    { href: "/restaurant", icon: <LayoutDashboard className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "לוח מחוונים" },
-    { href: "/categories", icon: <Tags className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "קטגוריות" },
-    { href: "/items", icon: <List className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "פריטים" },
-    { href: "/customization", icon: <Palette className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "התאמה אישית" },
-    { href: "/qr-code", icon: <QrCode className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "קוד QR" },
-    { href: "/profile", icon: <User className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "פרופיל" },
-  ];
-
-  const links = isSuperAdmin ? superAdminLinks : restaurantAdminLinks;
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', String(newMode));
+      document.documentElement.classList.toggle('dark', newMode);
+    }
+  };
 
   const handleLogout = () => {
     logoutMutation.mutate();
   };
 
-  // Close sidebar when clicking a link on mobile
-  const handleLinkClick = () => {
-    if (window.innerWidth < 768) {
-      closeSidebar();
-    }
-  };
+  const superAdminLinks = [
+    { href: "/", label: "לוח בקרה", icon: "fa-tachometer-alt" },
+    { href: "/restaurants", label: "רשימת מסעדות", icon: "fa-utensils" },
+  ];
 
-  // Backdrop for mobile
-  const backdrop = isOpen ? (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-      onClick={closeSidebar}
-    />
-  ) : null;
+  const restaurantAdminLinks = [
+    { href: "/restaurant-admin/dashboard", label: "לוח בקרה", icon: "fa-tachometer-alt" },
+    { href: "/restaurant-admin/categories", label: "קטגוריות", icon: "fa-list" },
+    { href: "/restaurant-admin/items", label: "פריטים", icon: "fa-hamburger" },
+    { href: "/restaurant-admin/menu-settings", label: "הגדרות תפריט", icon: "fa-cog" },
+  ];
+
+  const links = user?.role === 'super_admin' ? superAdminLinks : restaurantAdminLinks;
 
   return (
-    <>
-      {backdrop}
-      <div id="sidebar" className={sidebarClass}>
-        {/* Logo */}
-        <div className="flex items-center justify-center h-16 bg-primary-600">
-          <span className="text-white text-xl font-semibold">מערכת ניהול מסעדות</span>
+    <div className={cn(
+      "fixed inset-y-0 right-0 z-50 w-64 bg-white dark:bg-slate-800 shadow-lg transform transition-transform duration-300 md:translate-x-0 lg:relative",
+      {
+        "translate-x-0": isMobile,
+        "translate-x-full": !isMobile,
+      }
+    )}>
+      <div className="flex flex-col h-full">
+        {/* Logo and mobile close button */}
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+          <div className="flex justify-between items-center">
+            <h1 className="text-xl font-bold text-primary-700 dark:text-primary-500">RestaurantOS</h1>
+            {isMobile && (
+              <button
+                onClick={() => setIsMobileOpen(false)}
+                className="md:hidden text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            )}
+          </div>
         </div>
         
-        {/* User info */}
-        <div className="px-4 py-5 bg-primary-700 text-white">
+        {/* Admin info */}
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center">
-              <span className="text-lg font-semibold">
-                {user?.name?.substring(0, 2).toUpperCase() || "NA"}
-              </span>
+            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700">
+              <i className="fas fa-user"></i>
             </div>
-            <div className="rtl:mr-3 ltr:ml-3">
-              <p className="text-sm font-medium">{user?.name || "User"}</p>
-              <p className="text-xs opacity-75">{user?.email || user?.username}</p>
+            <div className="mr-3">
+              <div className="text-sm font-medium text-slate-900 dark:text-white">
+                {user?.role === 'super_admin' ? 'מנהל ראשי' : 'מנהל מסעדה'}
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</div>
             </div>
           </div>
         </div>
         
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto">
-          <div className="px-2 py-4 space-y-1">
+        {/* Navigation links */}
+        <div className="flex-grow overflow-y-auto py-4">
+          <div className="px-2 space-y-1">
             {links.map((link) => (
-              <Link
-                key={link.href}
+              <Link 
+                key={link.href} 
                 href={link.href}
-                onClick={handleLinkClick}
                 className={cn(
-                  "sidebar-item flex items-center px-4 py-2 text-sm font-medium rounded-md",
+                  "group flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-primary-50 dark:hover:bg-slate-700",
                   location === link.href
-                    ? "active bg-primary-50 text-primary-600 rtl:border-r-2 ltr:border-l-2 border-primary-600"
-                    : "text-gray-700 hover:bg-gray-50"
+                    ? "bg-primary-50 text-primary-700 dark:bg-slate-700 dark:text-primary-300 border-r-2 border-primary-700 dark:border-primary-300"
+                    : "text-slate-700 dark:text-slate-300"
                 )}
               >
-                {link.icon}
-                <span>{link.label}</span>
+                <i className={`fas ${link.icon} w-6 h-6 ml-3`}></i>
+                {link.label}
               </Link>
             ))}
           </div>
-        </nav>
+        </div>
         
-        {/* Logout */}
-        <div className="p-4 bg-gray-50 border-t">
-          <button 
-            onClick={handleLogout}
-            className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600"
-          >
-            <LogOut className="rtl:ml-2 ltr:mr-2 text-lg" />
-            <span>התנתק</span>
-          </button>
+        {/* Bottom section with logout and dark mode */}
+        <div className="border-t border-slate-200 dark:border-slate-700 p-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleDarkMode}
+              className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
+            >
+              {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+            <Button
+              variant="ghost" 
+              className="flex items-center text-red-500 hover:text-red-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+              onClick={handleLogout}
+              disabled={logoutMutation.isPending}
+            >
+              <i className="fas fa-sign-out-alt ml-2"></i>
+              התנתק
+              {logoutMutation.isPending && <span className="mr-2 animate-spin">⟳</span>}
+            </Button>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

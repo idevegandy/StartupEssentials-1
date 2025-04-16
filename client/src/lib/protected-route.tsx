@@ -2,17 +2,15 @@ import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
 
-interface ProtectedRouteProps {
-  path: string;
-  component: React.ComponentType;
-  role?: "super_admin" | "restaurant_admin" | "any";
-}
-
 export function ProtectedRoute({
   path,
   component: Component,
-  role = "any",
-}: ProtectedRouteProps) {
+  roles = [],
+}: {
+  path: string;
+  component: () => React.JSX.Element;
+  roles?: string[];
+}) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -33,32 +31,22 @@ export function ProtectedRoute({
     );
   }
 
-  // Properly check role permissions
-  if (role !== "any") {
-    // If route requires super_admin role but user is not super_admin
-    if (role === "super_admin" && user.role !== "super_admin") {
-      console.log("Access denied: super_admin route, user is", user.role);
-      return (
-        <Route path={path}>
-          <Redirect to="/" />
-        </Route>
-      );
-    }
-    
-    // If route requires restaurant_admin role but user is not restaurant_admin or super_admin
-    if (role === "restaurant_admin" && user.role !== "restaurant_admin" && user.role !== "super_admin") {
-      console.log("Access denied: restaurant_admin route, user is", user.role);
-      return (
-        <Route path={path}>
-          <Redirect to="/" />
-        </Route>
-      );
-    }
+  // Check role restrictions if specified
+  if (roles.length > 0 && !roles.includes(user.role)) {
+    return (
+      <Route path={path}>
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+          <h1 className="text-2xl font-bold text-red-600 mb-2">גישה נדחתה</h1>
+          <p className="text-gray-600 mb-4">אין לך הרשאות לצפות בעמוד זה.</p>
+          {user.role === 'restaurant_admin' ? (
+            <Redirect to="/restaurant-admin/dashboard" />
+          ) : (
+            <Redirect to="/" />
+          )}
+        </div>
+      </Route>
+    );
   }
 
-  return (
-    <Route path={path}>
-      <Component />
-    </Route>
-  );
+  return <Route path={path} component={Component} />
 }
