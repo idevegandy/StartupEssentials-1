@@ -331,6 +331,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all items for a restaurant
+  app.get("/api/restaurants/:restaurantId/items", async (req, res) => {
+    try {
+      const restaurantId = parseInt(req.params.restaurantId);
+      
+      // Check if restaurant exists
+      const restaurant = await storage.getRestaurant(restaurantId);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+      
+      // If logged in as restaurant admin, check if they own this restaurant
+      if (req.isAuthenticated() && req.user.role === 'restaurant_admin' && req.user.restaurantId !== restaurantId) {
+        return res.status(403).json({ message: "Unauthorized access to restaurant items" });
+      }
+      
+      const items = await storage.getItemsByRestaurant(restaurantId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+      res.status(500).json({ message: "Failed to fetch items" });
+    }
+  });
+  
   // Create an item
   app.post("/api/categories/:categoryId/items", checkRole(['super_admin', 'restaurant_admin']), async (req, res) => {
     try {

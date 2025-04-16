@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -83,7 +83,7 @@ export default function RestaurantMenuSettings() {
   });
 
   // Update form when restaurant data loads
-  useState(() => {
+  useEffect(() => {
     if (restaurant) {
       form.reset({
         name: restaurant.name || "",
@@ -102,7 +102,7 @@ export default function RestaurantMenuSettings() {
         setLogoPreview(restaurant.logo);
       }
     }
-  });
+  }, [restaurant, form]);
 
   // Update restaurant mutation
   const updateMutation = useMutation({
