@@ -1,9 +1,9 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { LocaleProvider } from "@/contexts/locale-context";
 
@@ -27,27 +27,66 @@ import AuthPage from "@/pages/auth";
 import MenuPage from "@/pages/menu/[slug]";
 
 function Router() {
+  const { user, isLoading } = useAuth();
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  // Not authenticated - show auth page or public menu
+  if (!user) {
+    return (
+      <Switch>
+        {/* Public Menu Route */}
+        <Route path="/menus/:slug" component={MenuPage} />
+        
+        {/* Auth Route - default route */}
+        <Route path="/auth" component={AuthPage} />
+        <Route>
+          <Redirect to="/auth" />
+        </Route>
+      </Switch>
+    );
+  }
+
+  // For super_admin
+  if (user.role === "super_admin") {
+    console.log("Rendering super_admin routes");
+    return (
+      <Switch>
+        <Route path="/" component={AdminDashboard} />
+        <Route path="/restaurants" component={Restaurants} />
+        <Route path="/settings" component={Settings} />
+        <Route path="/profile" component={Profile} />
+        
+        {/* Public Menu Route */}
+        <Route path="/menus/:slug" component={MenuPage} />
+        
+        {/* Fallback to 404 */}
+        <Route component={NotFound} />
+      </Switch>
+    );
+  }
+
+  // For restaurant_admin
+  console.log("Rendering restaurant_admin routes");
   return (
     <Switch>
-      {/* Super Admin Routes */}
-      <ProtectedRoute path="/" component={AdminDashboard} role="super_admin" />
-      <ProtectedRoute path="/restaurants" component={Restaurants} role="super_admin" />
-      <ProtectedRoute path="/settings" component={Settings} role="super_admin" />
-      <ProtectedRoute path="/profile" component={Profile} role="any" />
-
-      {/* Restaurant Admin Routes */}
-      <ProtectedRoute path="/restaurant" component={RestaurantDashboard} role="restaurant_admin" />
-      <ProtectedRoute path="/categories" component={Categories} role="restaurant_admin" />
-      <ProtectedRoute path="/items" component={Items} role="restaurant_admin" />
-      <ProtectedRoute path="/customization" component={Customization} role="restaurant_admin" />
-      <ProtectedRoute path="/qr-code" component={QrCodePage} role="restaurant_admin" />
-
-      {/* Auth Route */}
-      <Route path="/auth" component={AuthPage} />
-
+      <Route path="/" component={RestaurantDashboard} />
+      <Route path="/categories" component={Categories} />
+      <Route path="/items" component={Items} />
+      <Route path="/customization" component={Customization} />
+      <Route path="/qr-code" component={QrCodePage} />
+      <Route path="/profile" component={Profile} />
+      
       {/* Public Menu Route */}
       <Route path="/menus/:slug" component={MenuPage} />
-
+      
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

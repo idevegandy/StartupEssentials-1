@@ -60,7 +60,9 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
+      httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      sameSite: 'lax'
     }
   };
 
@@ -72,24 +74,50 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        console.log(`Attempting login for username: ${username}`);
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        
+        if (!user) {
+          console.log(`User not found: ${username}`);
+          return done(null, false);
+        }
+        
+        console.log(`User found: ${username}, role: ${user.role}`);
+        const passwordMatch = await comparePasswords(password, user.password);
+        console.log(`Password match: ${passwordMatch}`);
+        
+        if (!passwordMatch) {
           return done(null, false);
         } else {
+          console.log(`Login successful for: ${username}, user ID: ${user.id}`);
           return done(null, user);
         }
       } catch (err) {
+        console.error('Login error:', err);
         return done(err);
       }
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  passport.serializeUser((user, done) => {
+    console.log(`Serializing user: ${user.username}, ID: ${user.id}`);
+    done(null, user.id);
+  });
+  
   passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log(`Deserializing user ID: ${id}`);
       const user = await storage.getUser(id);
+      
+      if (!user) {
+        console.log(`User with ID ${id} not found during deserialization`);
+        return done(null, false);
+      }
+      
+      console.log(`Successfully deserialized user: ${user.username}, role: ${user.role}`);
       done(null, user);
     } catch (err) {
+      console.error('Error during deserialization:', err);
       done(err);
     }
   });
