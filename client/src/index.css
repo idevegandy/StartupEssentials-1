@@ -2,10 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    direction: rtl;
+  }
+
+  html {
+    direction: rtl;
+  }
+}
+
 /* RTL Support */
 .rtl {
   direction: rtl;
-  text-align: right;
+}
+
+.ltr {
+  direction: ltr;
+}
+
+/* Flip FlexBox and Grid Direction for RTL */
+.rtl .flex-row {
+  flex-direction: row-reverse;
+}
+
+.rtl .space-x-1 > :not([hidden]) ~ :not([hidden]),
+.rtl .space-x-2 > :not([hidden]) ~ :not([hidden]),
+.rtl .space-x-3 > :not([hidden]) ~ :not([hidden]),
+.rtl .space-x-4 > :not([hidden]) ~ :not([hidden]),
+.rtl .space-x-5 > :not([hidden]) ~ :not([hidden]),
+.rtl .space-x-6 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+/* Fix positioning for RTL */
+.rtl .left-0 {
+  left: auto;
+  right: 0;
+}
+
+.rtl .right-0 {
+  right: auto;
+  left: 0;
+}
+
+.rtl .ml-1 {
+  margin-left: 0;
+  margin-right: 0.25rem;
 }
 
 .rtl .ml-2 {
@@ -18,9 +66,14 @@
   margin-right: 0.75rem;
 }
 
-.rtl .mr-3 {
+.rtl .ml-4 {
+  margin-left: 0;
+  margin-right: 1rem;
+}
+
+.rtl .mr-1 {
   margin-right: 0;
-  margin-left: 0.75rem;
+  margin-left: 0.25rem;
 }
 
 .rtl .mr-2 {
@@ -28,40 +81,68 @@
   margin-left: 0.5rem;
 }
 
-/* Flip transforms for RTL */
-.rtl .translate-x-0 {
-  transform: translateX(0);
+.rtl .mr-3 {
+  margin-right: 0;
+  margin-left: 0.75rem;
 }
 
-.rtl .-translate-x-full {
-  transform: translateX(100%);
+.rtl .mr-4 {
+  margin-right: 0;
+  margin-left: 1rem;
 }
 
-/* Make sure border appears on the other side in RTL */
-.rtl .border-r-3 {
-  border-right-width: 0;
-  border-left-width: 3px;
+.rtl .pl-1 {
+  padding-left: 0;
+  padding-right: 0.25rem;
 }
 
-/* Icons should be mirrored in RTL */
-.rtl .lucide {
-  transform: scaleX(-1);
+.rtl .pl-2 {
+  padding-left: 0;
+  padding-right: 0.5rem;
 }
 
-/* Don't mirror these specific icons */
-.rtl .lucide-text,
-.rtl .lucide-image,
-.rtl .lucide-globe,
-.rtl .lucide-book-open {
-  transform: scaleX(1);
+.rtl .pl-3 {
+  padding-left: 0;
+  padding-right: 0.75rem;
 }
 
-@layer base {
-  * {
-    @apply border-border;
+.rtl .pl-4 {
+  padding-left: 0;
+  padding-right: 1rem;
+}
+
+.rtl .pr-1 {
+  padding-right: 0;
+  padding-left: 0.25rem;
+}
+
+.rtl .pr-2 {
+  padding-right: 0;
+  padding-left: 0.5rem;
+}
+
+.rtl .pr-3 {
+  padding-right: 0;
+  padding-left: 0.75rem;
+}
+
+.rtl .pr-4 {
+  padding-right: 0;
+  padding-left: 1rem;
+}
+
+/* Animation for RTL */
+@keyframes slide-in-rtl {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
   }
-
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
+}
+
+.animate-slide-in {
+  animation: slide-in-rtl 0.3s ease-out forwards;
 }

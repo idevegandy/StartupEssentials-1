@@ -1,119 +1,152 @@
-import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Upload, X } from "lucide-react";
-import { useLocale } from "@/contexts/locale-context";
+import { useEffect, useState } from "react";
+import { Cloud, File, X } from "lucide-react";
+import { useDropzone } from "react-dropzone";
+import { Button } from "./button";
+import { FileWithPreview } from "@/types";
 
 interface FileUploadProps {
-  onFileSelected: (file: File) => void;
-  currentImageUrl?: string;
-  onRemove?: () => void;
-  accept?: string;
-  maxSize?: number; // in MB
+  value?: FileWithPreview | null;
+  onChange: (file: FileWithPreview | null) => void;
+  onBlur?: () => void;
+  disabled?: boolean;
+  accept?: Record<string, string[]>;
+  maxSize?: number;
   className?: string;
-  previewSize?: "sm" | "md" | "lg";
-  label?: string;
-  variant?: "default" | "outline" | "secondary";
 }
 
 export function FileUpload({
-  onFileSelected,
-  currentImageUrl,
-  onRemove,
-  accept = "image/png, image/jpeg, image/svg+xml",
-  maxSize = 2, // 2MB default
+  value,
+  onChange,
+  onBlur,
+  disabled = false,
+  accept = {
+    'image/*': []
+  },
+  maxSize = 5 * 1024 * 1024, // 5MB
   className = "",
-  previewSize = "md",
-  label,
-  variant = "outline"
 }: FileUploadProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | undefined>(currentImageUrl);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
-  const { t } = useLocale();
+  const [file, setFile] = useState<FileWithPreview | null>(value || null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
+    onDrop: (acceptedFiles) => {
+      if (acceptedFiles?.[0]) {
+        const file = Object.assign(acceptedFiles[0], {
+          preview: URL.createObjectURL(acceptedFiles[0])
+        });
+        setFile(file);
+        onChange(file);
+      }
+    },
+    maxSize,
+    accept,
+    disabled,
+    maxFiles: 1,
+  });
 
-    // Check file size
-    if (file.size > maxSize * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: `File size should not exceed ${maxSize}MB`,
-        variant: "destructive",
-      });
-      return;
+  // Handle file removal
+  const handleRemove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    setFile(null);
+    onChange(null);
+  };
+
+  // Show file rejection errors
+  const fileRejectionItems = fileRejections.map(({ file, errors }) => (
+    <div key={file.name} className="mt-1 text-sm text-red-500">
+      {errors.map(e => (
+        <p key={e.code}>{e.message}</p>
+      ))}
+    </div>
+  ));
+
+  // Create preview when file value changes
+  useEffect(() => {
+    if (value && !(value instanceof File)) {
+      // If value is a string (URL), create a placeholder preview object
+      const mockFile = {
+        name: value.name || "Uploaded Image",
+        size: 0,
+        type: "image/jpeg",
+        preview: value.preview,
+      } as FileWithPreview;
+      setFile(mockFile);
+    } else {
+      setFile(value || null);
     }
+  }, [value]);
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreviewUrl(reader.result as string);
+  // Clean up preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (file?.preview && file instanceof File) {
+        URL.revokeObjectURL(file.preview);
+      }
     };
-    reader.readAsDataURL(file);
-    onFileSelected(file);
-  };
-
-  const handleRemove = () => {
-    setPreviewUrl(undefined);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-    if (onRemove) {
-      onRemove();
-    }
-  };
-
-  const sizeClasses = {
-    sm: "w-16 h-16",
-    md: "w-20 h-20",
-    lg: "w-24 h-24",
-  };
-
-  const previewSizeClass = sizeClasses[previewSize];
+  }, [file]);
 
   return (
-    <div className={`flex items-center ${className}`}>
+    <div className={className}>
       <div
-        className={`${previewSizeClass} rounded-lg flex items-center justify-center overflow-hidden ${
-          previewUrl ? "border border-neutral-300" : "border-2 border-dashed border-neutral-300 bg-neutral-50"
-        }`}
+        {...getRootProps({
+          className: `border-2 border-dashed rounded-md cursor-pointer bg-gray-50 hover:bg-gray-100 ${
+            isDragActive ? "border-primary-300 bg-primary-50" : "border-gray-300"
+          } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`,
+          onBlur,
+        })}
       >
-        {previewUrl ? (
-          <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+        <input {...getInputProps()} />
+        
+        {file ? (
+          <div className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {file.type?.startsWith("image/") && file.preview ? (
+                <div className="h-16 w-16 relative">
+                  <img
+                    src={file.preview}
+                    alt={file.name}
+                    className="h-16 w-16 object-cover rounded-md"
+                    onLoad={() => {
+                      if (file instanceof File) {
+                        URL.revokeObjectURL(file.preview);
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <File className="h-8 w-8 text-gray-500" />
+              )}
+              <div className="text-xs text-gray-700">
+                <p className="font-medium">{file.name}</p>
+                {file.size && (
+                  <p>{Math.round(file.size / 1024)}kb</p>
+                )}
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="opacity-70 hover:opacity-100"
+              onClick={handleRemove}
+              disabled={disabled}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         ) : (
-          <Upload className="text-neutral-400 h-6 w-6" />
+          <div className="p-6 flex flex-col items-center justify-center text-center">
+            <Cloud className="h-10 w-10 text-gray-400 mb-2" />
+            <p className="text-sm font-medium text-gray-700">
+              {isDragActive ? "Drop the file here" : "Drag and drop a file here or click to browse"}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Max file size: {Math.round(maxSize / 1024 / 1024)}MB
+            </p>
+          </div>
         )}
       </div>
-      <div className="mr-4">
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept={accept}
-          style={{ display: "none" }}
-        />
-        <Button
-          variant={variant}
-          size="sm"
-          className="mb-2 w-full"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="mr-2 h-4 w-4" />
-          {label || t("upload")}
-        </Button>
-        {previewUrl && onRemove && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-0"
-            onClick={handleRemove}
-          >
-            <X className="h-4 w-4 mr-1" />
-            {t("remove")}
-          </Button>
-        )}
-      </div>
+
+      {fileRejectionItems}
     </div>
   );
 }

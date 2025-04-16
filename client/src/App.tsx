@@ -1,117 +1,66 @@
-import React from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
-import { useAuth, AuthProvider } from "./contexts/auth-context";
-import { Sidebar } from "@/components/ui/sidebar";
-import Dashboard from "@/pages/dashboard";
-import Restaurants from "@/pages/restaurants";
-import Users from "@/pages/users";
-import Categories from "@/pages/categories";
-import RestaurantDashboard from "@/pages/restaurant-dashboard";
-import MenuEditor from "@/pages/menu-editor";
-import Appearance from "@/pages/appearance";
-import QRCodes from "@/pages/qr-codes";
-import SocialMedia from "@/pages/social-media";
-import PublicMenu from "@/pages/public-menu";
-import Login from "@/pages/login";
-import Statistics from "@/pages/statistics";
-import Settings from "@/pages/settings";
-import { useLocale, LocaleProvider } from "./contexts/locale-context";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./lib/queryClient";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [, navigate] = useLocation();
+// Admin Pages
+import AdminDashboard from "@/pages/admin/dashboard";
+import Restaurants from "@/pages/admin/restaurants";
+import Settings from "@/pages/admin/settings";
+import Profile from "@/pages/admin/profile";
 
-  React.useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate("/login");
-    }
-  }, [isLoading, isAuthenticated, navigate]);
+// Restaurant Admin Pages
+import RestaurantDashboard from "@/pages/restaurant/dashboard";
+import Categories from "@/pages/restaurant/categories";
+import Items from "@/pages/restaurant/items";
+import Customization from "@/pages/restaurant/customization";
+import QrCodePage from "@/pages/restaurant/qr-code";
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+// Auth Page
+import AuthPage from "@/pages/auth";
 
-  if (!isAuthenticated) {
-    return null;
-  }
+// Public Menu Page
+import MenuPage from "@/pages/menu/[slug]";
 
-  return <>{children}</>;
-}
-
-// This function is not used, so removing it
-
-function PublicMenuWrapper() {
+function Router() {
   return (
-    <LocaleProvider>
-      <PublicMenu />
-    </LocaleProvider>
+    <Switch>
+      {/* Super Admin Routes */}
+      <ProtectedRoute path="/" component={AdminDashboard} role="super_admin" />
+      <ProtectedRoute path="/restaurants" component={Restaurants} role="super_admin" />
+      <ProtectedRoute path="/settings" component={Settings} role="super_admin" />
+      <ProtectedRoute path="/profile" component={Profile} role="any" />
+
+      {/* Restaurant Admin Routes */}
+      <ProtectedRoute path="/restaurant" component={RestaurantDashboard} role="restaurant_admin" />
+      <ProtectedRoute path="/categories" component={Categories} role="restaurant_admin" />
+      <ProtectedRoute path="/items" component={Items} role="restaurant_admin" />
+      <ProtectedRoute path="/customization" component={Customization} role="restaurant_admin" />
+      <ProtectedRoute path="/qr-code" component={QrCodePage} role="restaurant_admin" />
+
+      {/* Auth Route */}
+      <Route path="/auth" component={AuthPage} />
+
+      {/* Public Menu Route */}
+      <Route path="/menus/:slug" component={MenuPage} />
+
+      {/* Fallback to 404 */}
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Switch>
-        {/* Public Menu Route outside AuthProvider - Accessible without login or auth checks */}
-        <Route path="/menus/:restaurantSlug">
-          <PublicMenuWrapper />
-        </Route>
-        
-        {/* All other routes with AuthProvider */}
-        <Route path="*">
-          <AuthProvider>
-            <LocaleProvider>
-              <AppContent />
-            </LocaleProvider>
-          </AuthProvider>
-        </Route>
-      </Switch>
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
-  );
-}
-
-function AppContent() {
-  const { dir } = useLocale();
-  
-  return (
-    <div className={`font-sans antialiased bg-neutral-50 text-neutral-800 ${dir === 'rtl' ? 'rtl' : ''}`}>
-      <Switch>
-        <Route path="/login" component={Login} />
-        
-        {/* Protected routes */}
-        <Route path="/">
-          <ProtectedRoute>
-            <div className="flex h-screen overflow-hidden">
-              <Sidebar />
-              <div className="flex-1 overflow-y-auto">
-                <Switch>
-                  <Route path="/restaurant/:id/dashboard" component={RestaurantDashboard} />
-                  <Route path="/restaurant/:id/menu" component={MenuEditor} />
-                  <Route path="/restaurant/:id/appearance" component={Appearance} />
-                  <Route path="/restaurant/:id/qr-codes" component={QRCodes} />
-                  <Route path="/restaurant/:id/social-media" component={SocialMedia} />
-                  <Route path="/restaurants" component={Restaurants} />
-                  <Route path="/users" component={Users} />
-                  <Route path="/categories" component={Categories} />
-                  <Route path="/statistics" component={Statistics} />
-                  <Route path="/settings" component={Settings} />
-                  <Route path="/" component={Dashboard} />
-                  <Route path="*" component={NotFound} />
-                </Switch>
-              </div>
-            </div>
-          </ProtectedRoute>
-        </Route>
-        
-        {/* Fallback to 404 */}
-        <Route component={NotFound} />
-      </Switch>
-    </div>
   );
 }
 
