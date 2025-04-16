@@ -20,8 +20,9 @@ import Items from "@/pages/restaurant/items";
 import Customization from "@/pages/restaurant/customization";
 import QrCodePage from "@/pages/restaurant/qr-code";
 
-// Auth Page
+// Auth Pages
 import AuthPage from "@/pages/auth";
+import TestLogin from "@/pages/test-login";
 
 // Public Menu Page
 import MenuPage from "@/pages/menu/[slug]";
@@ -45,6 +46,9 @@ function Router() {
         {/* Public Menu Route */}
         <Route path="/menus/:slug" component={MenuPage} />
         
+        {/* Test Login Route - for debugging auth issues */}
+        <Route path="/test-login" component={TestLogin} />
+        
         {/* Auth Route - default route */}
         <Route path="/auth" component={AuthPage} />
         <Route>
@@ -63,6 +67,9 @@ function Router() {
         <Route path="/restaurants" component={Restaurants} />
         <Route path="/settings" component={Settings} />
         <Route path="/profile" component={Profile} />
+        
+        {/* Test Login & Debug Route */}
+        <Route path="/test-login" component={TestLogin} />
         
         {/* Public Menu Route */}
         <Route path="/menus/:slug" component={MenuPage} />
@@ -83,6 +90,9 @@ function Router() {
       <Route path="/customization" component={Customization} />
       <Route path="/qr-code" component={QrCodePage} />
       <Route path="/profile" component={Profile} />
+      
+      {/* Test Login & Debug Route */}
+      <Route path="/test-login" component={TestLogin} />
       
       {/* Public Menu Route */}
       <Route path="/menus/:slug" component={MenuPage} />
