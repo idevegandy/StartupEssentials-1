@@ -48,6 +48,7 @@ export default function AuthPage() {
   });
 
   const onSubmitLogin = (values: z.infer<typeof loginSchema>) => {
+    console.log("Attempting login with:", values);
     loginMutation.mutate(values);
   };
 
@@ -64,6 +65,19 @@ export default function AuthPage() {
     // This would typically call a registration mutation
     // But since registration is handled by super admin, this is disabled
     alert('הרשמה אינה זמינה ישירות. מנהלי מסעדות נוצרים על ידי מנהל מערכת ראשי.');
+  };
+
+  // Add helper functions for dev login
+  const loginAsSuperAdmin = () => {
+    loginForm.setValue("email", "superadmin@example.com");
+    loginForm.setValue("password", "SuperSecure123");
+    loginForm.handleSubmit(onSubmitLogin)();
+  };
+
+  const loginAsRestaurantAdmin = () => {
+    loginForm.setValue("email", "admin+falafel-express@example.com");
+    loginForm.setValue("password", "Admin1234");
+    loginForm.handleSubmit(onSubmitLogin)();
   };
 
   return (
@@ -92,7 +106,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>דוא"ל</FormLabel>
                         <FormControl>
-                          <Input placeholder="mail@example.com" {...field} />
+                          <Input placeholder="mail@example.com" {...field} dir="ltr" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -106,7 +120,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>סיסמה</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} />
+                          <Input type="password" {...field} dir="ltr" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -127,6 +141,31 @@ export default function AuthPage() {
                       "התחברות"
                     )}
                   </Button>
+
+                  {/* Quick login buttons for development */}
+                  <div className="pt-4 border-t mt-4">
+                    <p className="text-sm text-slate-500 mb-2">כניסה מהירה לפיתוח:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={loginAsSuperAdmin}
+                        className="text-xs"
+                      >
+                        מנהל מערכת
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={loginAsRestaurantAdmin}
+                        className="text-xs"
+                      >
+                        מנהל מסעדה
+                      </Button>
+                    </div>
+                  </div>
                 </form>
               </Form>
             </TabsContent>
@@ -141,7 +180,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>דוא"ל</FormLabel>
                         <FormControl>
-                          <Input placeholder="mail@example.com" {...field} />
+                          <Input placeholder="mail@example.com" {...field} dir="ltr" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -155,7 +194,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>סיסמה</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} />
+                          <Input type="password" {...field} dir="ltr" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
