@@ -79,9 +79,9 @@ export function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`w-64 bg-white shadow-md fixed h-screen overflow-y-auto z-30 transition-transform duration-300 ${
+        className={`w-64 bg-white shadow-md fixed h-screen z-30 transition-transform duration-300 ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        } md:relative md:translate-x-0`}
+        } md:relative md:translate-x-0 flex flex-col`}
       >
         <div className="p-4 border-b border-neutral-200">
           <div className="flex items-center justify-between">
@@ -97,107 +97,116 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* Super Admin Navigation */}
-        {isSuperAdmin && (
-          <div>
-            <div className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase">{t("system_management")}</div>
-            <nav>
-              <NavItem 
-                href="/" 
-                icon={<LayoutDashboard size={18} />} 
-                label={t("dashboard")} 
-                isActive={location === "/"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
-              <NavItem 
-                href="/restaurants" 
-                icon={<Utensils size={18} />} 
-                label={t("restaurants")} 
-                isActive={location === "/restaurants"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
-              <NavItem 
-                href="/users" 
-                icon={<Users size={18} />} 
-                label={t("users")} 
-                isActive={location === "/users"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
-              <NavItem 
-                href="/categories" 
-                icon={<Tags size={18} />} 
-                label={t("categories")} 
-                isActive={location === "/categories"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
-              <NavItem 
-                href="/statistics" 
-                icon={<BarChart size={18} />} 
-                label={t("statistics")} 
-                isActive={location === "/statistics"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
-              <NavItem 
-                href="/settings" 
-                icon={<Settings size={18} />} 
-                label={t("settings")} 
-                isActive={location === "/settings"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
-            </nav>
-          </div>
-        )}
+        {/* Navigation content - scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Super Admin Navigation */}
+          {isSuperAdmin && (
+            <div>
+              <div className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase">{t("system_management")}</div>
+              <nav>
+                <NavItem 
+                  href="/" 
+                  icon={<LayoutDashboard size={18} />} 
+                  label={t("dashboard")} 
+                  isActive={location === "/"} 
+                  onClick={() => setIsMobileOpen(false)}
+                />
+                <NavItem 
+                  href="/restaurants" 
+                  icon={<Utensils size={18} />} 
+                  label={t("restaurants")} 
+                  isActive={location === "/restaurants"} 
+                  onClick={() => setIsMobileOpen(false)}
+                />
+                <NavItem 
+                  href="/users" 
+                  icon={<Users size={18} />} 
+                  label={t("users")} 
+                  isActive={location === "/users"} 
+                  onClick={() => setIsMobileOpen(false)}
+                />
+                <NavItem 
+                  href="/categories" 
+                  icon={<Tags size={18} />} 
+                  label={t("categories")} 
+                  isActive={location === "/categories"} 
+                  onClick={() => setIsMobileOpen(false)}
+                />
+                <NavItem 
+                  href="/statistics" 
+                  icon={<BarChart size={18} />} 
+                  label={t("statistics")} 
+                  isActive={location === "/statistics"} 
+                  onClick={() => setIsMobileOpen(false)}
+                />
+                <NavItem 
+                  href="/settings" 
+                  icon={<Settings size={18} />} 
+                  label={t("settings")} 
+                  isActive={location === "/settings"} 
+                  onClick={() => setIsMobileOpen(false)}
+                />
+              </nav>
+            </div>
+          )}
 
-        {/* Restaurant Admin Navigation */}
-        {isRestaurantAdmin && user?.restaurants?.length > 0 && (
-          <div>
-            <div className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase">{t("restaurant_management")}</div>
-            <nav>
-              {user.restaurants.map((restaurant) => (
-                <div key={restaurant.id} className="mb-2">
-                  <div className="px-4 py-2 text-sm font-semibold text-primary">{restaurant.name}</div>
-                  <NavItem 
-                    href={`/restaurant/${restaurant.id}/dashboard`}
-                    icon={<Home size={18} />} 
-                    label={t("general")} 
-                    isActive={location === `/restaurant/${restaurant.id}/dashboard`} 
-                    onClick={() => setIsMobileOpen(false)}
-                  />
-                  <NavItem 
-                    href={`/restaurant/${restaurant.id}/menu`}
-                    icon={<BookOpen size={18} />} 
-                    label={t("menu_editor")} 
-                    isActive={location === `/restaurant/${restaurant.id}/menu`} 
-                    onClick={() => setIsMobileOpen(false)}
-                  />
-                  <NavItem 
-                    href={`/restaurant/${restaurant.id}/appearance`}
-                    icon={<Palette size={18} />} 
-                    label={t("appearance")} 
-                    isActive={location === `/restaurant/${restaurant.id}/appearance`} 
-                    onClick={() => setIsMobileOpen(false)}
-                  />
-                  <NavItem 
-                    href={`/restaurant/${restaurant.id}/qr-codes`}
-                    icon={<QrCode size={18} />} 
-                    label={t("qr_codes")} 
-                    isActive={location === `/restaurant/${restaurant.id}/qr-codes`} 
-                    onClick={() => setIsMobileOpen(false)}
-                  />
-                  <NavItem 
-                    href={`/restaurant/${restaurant.id}/social-media`}
-                    icon={<Share2 size={18} />} 
-                    label={t("social_media")} 
-                    isActive={location === `/restaurant/${restaurant.id}/social-media`} 
-                    onClick={() => setIsMobileOpen(false)}
-                  />
-                </div>
-              ))}
-            </nav>
-          </div>
-        )}
+          {/* Restaurant Admin Navigation */}
+          {isRestaurantAdmin && (
+            <div>
+              <div className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase">{t("restaurant_management")}</div>
+              <nav>
+                {user?.restaurants && user.restaurants.length > 0 ? (
+                  user.restaurants.map((restaurant: any) => (
+                    <div key={restaurant.id} className="mb-2">
+                      <div className="px-4 py-2 text-sm font-semibold text-primary">{restaurant.name}</div>
+                      <NavItem 
+                        href={`/restaurant/${restaurant.id}/dashboard`}
+                        icon={<Home size={18} />} 
+                        label={t("general")} 
+                        isActive={location === `/restaurant/${restaurant.id}/dashboard`} 
+                        onClick={() => setIsMobileOpen(false)}
+                      />
+                      <NavItem 
+                        href={`/restaurant/${restaurant.id}/menu`}
+                        icon={<BookOpen size={18} />} 
+                        label={t("menu_editor")} 
+                        isActive={location === `/restaurant/${restaurant.id}/menu`} 
+                        onClick={() => setIsMobileOpen(false)}
+                      />
+                      <NavItem 
+                        href={`/restaurant/${restaurant.id}/appearance`}
+                        icon={<Palette size={18} />} 
+                        label={t("appearance")} 
+                        isActive={location === `/restaurant/${restaurant.id}/appearance`} 
+                        onClick={() => setIsMobileOpen(false)}
+                      />
+                      <NavItem 
+                        href={`/restaurant/${restaurant.id}/qr-codes`}
+                        icon={<QrCode size={18} />} 
+                        label={t("qr_codes")} 
+                        isActive={location === `/restaurant/${restaurant.id}/qr-codes`} 
+                        onClick={() => setIsMobileOpen(false)}
+                      />
+                      <NavItem 
+                        href={`/restaurant/${restaurant.id}/social-media`}
+                        icon={<Share2 size={18} />} 
+                        label={t("social_media")} 
+                        isActive={location === `/restaurant/${restaurant.id}/social-media`} 
+                        onClick={() => setIsMobileOpen(false)}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-2 text-sm text-neutral-500">
+                    {t("no_restaurants_assigned")}
+                  </div>
+                )}
+              </nav>
+            </div>
+          )}
+        </div>
 
-        <div className="px-4 py-3 mt-auto border-t border-neutral-200 absolute bottom-0 w-full bg-white">
+        <div className="px-4 py-3 border-t border-neutral-200 w-full bg-white">
           {/* Language Selector */}
           <div className="mb-4">
             <div className="flex items-center mb-2">

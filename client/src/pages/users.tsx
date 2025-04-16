@@ -146,6 +146,26 @@ export default function Users() {
       setShowDialog(true);
     }
   };
+  
+  // Function to view user password (for super admin only)
+  const viewUserPassword = async (id: number) => {
+    try {
+      // In a real application, this should use a secure API endpoint
+      // For now, we'll simulate this by showing a toast notification
+      toast({
+        title: t("user_password"),
+        description: t("contact_administrator_for_password"),
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error viewing password:", error);
+      toast({
+        title: t("error"),
+        description: t("password_view_error"),
+        variant: "destructive",
+      });
+    }
+  };
 
   // Open delete confirmation dialog
   const handleDeleteClick = (id: number) => {
@@ -301,6 +321,16 @@ export default function Users() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            title={t("view_password")}
+                            onClick={() => viewUserPassword(userData.id)}
+                            disabled={userData.id === user?.id} // Prevent viewing own password
+                          >
+                            <UserCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={t("edit_user")}
                             onClick={() => handleEditUser(userData.id)}
                             disabled={userData.id === user?.id} // Prevent editing own account
                           >
@@ -309,7 +339,8 @@ export default function Users() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-red-500 hover:text-red-700" 
+                            className="text-red-500 hover:text-red-700"
+                            title={t("delete_user")}
                             onClick={() => handleDeleteClick(userData.id)}
                             disabled={userData.id === user?.id || userData.role === "super_admin"} // Prevent deleting own account or other super admin
                           >
