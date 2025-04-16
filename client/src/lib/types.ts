@@ -1,4 +1,4 @@
-import { User, Restaurant, Category, Item } from "@shared/schema";
+import { Restaurant, User, Category, Item } from "@shared/schema";
 
 export interface RestaurantWithAdmin extends Restaurant {
   admin?: User;
@@ -19,6 +19,8 @@ export interface CreateRestaurantData {
     slug: string;
     logo?: string;
     description?: string;
+    address?: string;
+    phone?: string;
   };
   admin: {
     name: string;
@@ -35,4 +37,6 @@ export interface MenuSettings {
   instagramLink?: string;
   websiteLink?: string;
   description?: string;
+  phone?: string;
+  address?: string;
 }

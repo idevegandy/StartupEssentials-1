@@ -39,6 +39,9 @@ export const restaurants = pgTable("restaurants", {
   instagramLink: text("instagram_link"),
   websiteLink: text("website_link"),
   description: text("description"),
+  phone: text("phone"),
+  address: text("address"),
+  rtl: boolean("rtl").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => {

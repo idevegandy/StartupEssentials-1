@@ -1,170 +1,143 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Building, Users, Store, Calendar } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlusCircle, Store, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AdminLayout from "@/components/layouts/admin-layout";
 import { apiRequest } from "@/lib/queryClient";
-
-// Dashboard types
-interface DashboardStats {
-  restaurantsCount: number;
-  activeRestaurantsCount: number;
-  restaurantAdminsCount: number;
-  itemsCount: number;
-}
+import { RestaurantWithAdmin } from "@/lib/types";
 
 export default function SuperAdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    restaurantsCount: 0,
-    activeRestaurantsCount: 0,
-    restaurantAdminsCount: 0,
-    itemsCount: 0
-  });
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  // Fetch restaurant data
-  const { data: restaurants } = useQuery({
+  // Fetch all restaurants
+  const { data: restaurants, isLoading } = useQuery({
     queryKey: ['/api/restaurants'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/restaurants');
       const data = await res.json();
-      return data;
+      return data as RestaurantWithAdmin[];
     }
   });
 
-  // Calculate statistics
-  useEffect(() => {
-    if (restaurants) {
-      setStats({
-        restaurantsCount: restaurants.length,
-        activeRestaurantsCount: restaurants.filter((r: any) => r.status !== 'inactive').length,
-        restaurantAdminsCount: restaurants.length, // Assuming each restaurant has one admin
-        itemsCount: restaurants.reduce((acc: number, r: any) => acc + (r.itemsCount || 0), 0)
-      });
-    }
-  }, [restaurants]);
-  
-  // Format date for "updated X days ago"
-  const formatDate = (date: Date | string) => {
-    const d = new Date(date);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return "היום";
-    if (diffDays === 1) return "אתמול";
-    return `לפני ${diffDays} ימים`;
-  };
+  // Stats calculation
+  const totalRestaurants = restaurants?.length || 0;
+  const totalAdmins = restaurants?.filter(r => r.admin).length || 0;
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight text-right">לוח בקרה</h1>
-  
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold tracking-tight">לוח בקרה</h1>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <PlusCircle className="ml-2 h-4 w-4" />
+            מסעדה חדשה
+          </Button>
+        </div>
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">מסעדות</CardTitle>
+              <CardTitle className="text-sm font-medium">סה"כ מסעדות</CardTitle>
               <Store className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.restaurantsCount}</div>
+              <div className="text-2xl font-bold">{totalRestaurants}</div>
               <p className="text-xs text-muted-foreground">
-                {stats.activeRestaurantsCount} פעילות
+                מסעדות פעילות במערכת
               </p>
             </CardContent>
           </Card>
-          
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">מנהלי מסעדות</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.restaurantAdminsCount}</div>
+              <div className="text-2xl font-bold">{totalAdmins}</div>
               <p className="text-xs text-muted-foreground">
-                פעילים במערכת
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">פריטי תפריט</CardTitle>
-              <Building className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.itemsCount}</div>
-              <p className="text-xs text-muted-foreground">
-                בכל המסעדות
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">עדכון אחרון</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatDate(new Date())}</div>
-              <p className="text-xs text-muted-foreground">
-                עדכון נתונים אחרון
+                משתמשים עם הרשאות ניהול
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Recent Restaurants */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">מסעדות אחרונות</h2>
-          </div>
+        {/* Restaurants List */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">מסעדות</h2>
           
-          <div className="rounded-md border">
-            <div className="relative w-full overflow-auto">
-              <table className="w-full caption-bottom text-sm">
-                <thead className="[&_tr]:border-b">
-                  <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                      שם
-                    </th>
-                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                      כתובת
-                    </th>
-                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                      מנהל
-                    </th>
-                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                      עדכון אחרון
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="[&_tr:last-child]:border-0">
-                  {restaurants?.slice(0, 5).map((restaurant: any) => (
-                    <tr 
-                      key={restaurant.id} 
-                      className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
-                    >
-                      <td className="p-4 align-middle font-medium">{restaurant.name}</td>
-                      <td className="p-4 align-middle">{restaurant.slug}</td>
-                      <td className="p-4 align-middle">{restaurant.admin?.name || "-"}</td>
-                      <td className="p-4 align-middle">{formatDate(restaurant.updatedAt)}</td>
-                    </tr>
-                  ))}
-                  
-                  {!restaurants?.length && (
-                    <tr>
-                      <td colSpan={4} className="h-24 text-center">
-                        אין מסעדות להצגה
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+          {isLoading ? (
+            <p>טוען נתונים...</p>
+          ) : restaurants && restaurants.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {restaurants.map((restaurant) => (
+                <Card key={restaurant.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center">
+                      {restaurant.logo && (
+                        <img 
+                          src={restaurant.logo} 
+                          alt={restaurant.name} 
+                          className="w-10 h-10 rounded-full object-cover ml-3"
+                        />
+                      )}
+                      <div>
+                        <CardTitle className="text-lg">{restaurant.name}</CardTitle>
+                        <CardDescription>
+                          {restaurant.admin?.name ?? "אין מנהל"}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col space-y-2">
+                      <div className="text-sm">
+                        <span className="font-medium">כתובת:</span>{" "}
+                        <span className="text-muted-foreground">{restaurant.address || "לא הוגדר"}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">דוא"ל מנהל:</span>{" "}
+                        <span className="text-muted-foreground">{restaurant.admin?.email || "לא הוגדר"}</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-end mt-4 space-x-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/restaurants/${restaurant.id}`}>
+                          נהל
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={`/menus/${restaurant.slug}`} target="_blank" rel="noopener noreferrer">
+                          צפה בתפריט
+                        </a>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </div>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>אין מסעדות</CardTitle>
+                <CardDescription>
+                  לא נמצאו מסעדות במערכת
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => setIsAddDialogOpen(true)}>
+                  <PlusCircle className="ml-2 h-4 w-4" />
+                  הוסף מסעדה ראשונה
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
+
+      {/* TODO: Add Restaurant Dialog */}
     </AdminLayout>
   );
 }
