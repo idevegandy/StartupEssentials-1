@@ -22,10 +22,35 @@ export async function hashPassword(password: string) {
 }
 
 export async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  try {
+    // Check if stored password is in the correct format
+    if (!stored || !stored.includes('.')) {
+      console.error('Stored password is in an invalid format');
+      return false;
+    }
+    
+    const [hashed, salt] = stored.split(".");
+    
+    // Check if both parts exist
+    if (!hashed || !salt) {
+      console.error('Missing hash or salt in stored password');
+      return false;
+    }
+    
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    
+    // Make sure the buffers are the same length
+    if (hashedBuf.length !== suppliedBuf.length) {
+      console.error('Buffer length mismatch:', hashedBuf.length, suppliedBuf.length);
+      return false;
+    }
+    
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  } catch (error) {
+    console.error('Error comparing passwords:', error);
+    return false;
+  }
 }
 
 export function setupAuth(app: Express) {
