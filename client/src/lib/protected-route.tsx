@@ -33,13 +33,32 @@ export function ProtectedRoute({
     );
   }
 
-  if (role !== "any" && user.role !== role && !(role === "super_admin" && user.role === "super_admin")) {
-    return (
-      <Route path={path}>
-        <Redirect to="/" />
-      </Route>
-    );
+  // Properly check role permissions
+  if (role !== "any") {
+    // If route requires super_admin role but user is not super_admin
+    if (role === "super_admin" && user.role !== "super_admin") {
+      console.log("Access denied: super_admin route, user is", user.role);
+      return (
+        <Route path={path}>
+          <Redirect to="/" />
+        </Route>
+      );
+    }
+    
+    // If route requires restaurant_admin role but user is not restaurant_admin or super_admin
+    if (role === "restaurant_admin" && user.role !== "restaurant_admin" && user.role !== "super_admin") {
+      console.log("Access denied: restaurant_admin route, user is", user.role);
+      return (
+        <Route path={path}>
+          <Redirect to="/" />
+        </Route>
+      );
+    }
   }
 
-  return <Route path={path} component={Component} />;
+  return (
+    <Route path={path}>
+      <Component />
+    </Route>
+  );
 }
