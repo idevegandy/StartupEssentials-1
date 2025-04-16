@@ -32,6 +32,7 @@ interface AuthenticatedRequest extends Request {
   user?: {
     id: number;
     role: string;
+    restaurants?: any[]; // Add restaurants array for consistency with client
   };
 }
 
@@ -193,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = user;
       
       // If restaurant admin, fetch their restaurants
-      let userResponse = { ...userWithoutPassword };
+      let userResponse: any = { ...userWithoutPassword };
       
       if (user.role === "restaurant_admin") {
         const restaurants = await storage.getRestaurantsByAdminId(user.id);
