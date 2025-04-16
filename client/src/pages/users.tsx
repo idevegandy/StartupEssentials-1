@@ -365,7 +365,7 @@ export default function Users() {
           <Button variant="ghost" size="sm" disabled>
             {t("previous")}
           </Button>
-          <span className="text-sm text-neutral-500">{t("page", { current: 1, total: 1 })}</span>
+          <span className="text-sm text-neutral-500">{t("page_info", { current: 1, total: 1 })}</span>
           <Button variant="ghost" size="sm" disabled>
             {t("next")}
           </Button>
