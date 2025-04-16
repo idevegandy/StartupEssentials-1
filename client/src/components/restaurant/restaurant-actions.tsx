@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Eye, Edit, QrCode, Trash } from "lucide-react";
+import { Eye, Edit, QrCode, Trash, User, Key } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import QrCodeModal from "./qr-code-modal";
@@ -13,6 +14,7 @@ import { Restaurant } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 
 interface RestaurantActionsProps {
   restaurant: Restaurant;
@@ -23,6 +25,14 @@ export default function RestaurantActions({ restaurant, onEdit }: RestaurantActi
   const { toast } = useToast();
   const [showQrModal, setShowQrModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  
+  // Get restaurant admin info
+  const { data: adminUsers } = useQuery({
+    queryKey: ["/api/restaurants", restaurant.id, "users"],
+    enabled: false, // Only load when needed
+  });
   
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -74,25 +84,43 @@ export default function RestaurantActions({ restaurant, onEdit }: RestaurantActi
             פעולות
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" dir="rtl">
+        <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={handleView} className="flex gap-2">
             <Eye className="h-4 w-4" />
             <span>צפה בתפריט</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleEdit} className="flex gap-2">
             <Edit className="h-4 w-4" />
-            <span>ערוך</span>
+            <span>ערוך מסעדה</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleShowQrCode} className="flex gap-2">
             <QrCode className="h-4 w-4" />
             <span>קוד QR</span>
           </DropdownMenuItem>
+          
+          <DropdownMenuSeparator />
+          
+          <DropdownMenuItem onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ["/api/restaurants", restaurant.id, "users"] });
+            setShowAdminModal(true);
+          }} className="flex gap-2">
+            <User className="h-4 w-4" />
+            <span>פרטי מנהל</span>
+          </DropdownMenuItem>
+          
+          <DropdownMenuItem onClick={() => setShowResetPasswordModal(true)} className="flex gap-2">
+            <Key className="h-4 w-4" />
+            <span>איפוס סיסמה</span>
+          </DropdownMenuItem>
+          
+          <DropdownMenuSeparator />
+          
           <DropdownMenuItem 
             onClick={handleShowDeleteModal} 
             className="flex gap-2 text-red-600 focus:text-red-500"
           >
             <Trash className="h-4 w-4" />
-            <span>מחק</span>
+            <span>מחק מסעדה</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

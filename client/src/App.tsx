@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { LocaleProvider } from "@/contexts/locale-context";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -56,10 +57,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router />
-        <Toaster />
-      </AuthProvider>
+      <LocaleProvider>
+        <AuthProvider>
+          <div className="rtl">
+            <Router />
+            <Toaster />
+          </div>
+        </AuthProvider>
+      </LocaleProvider>
     </QueryClientProvider>
   );
 }
