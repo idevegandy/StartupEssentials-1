@@ -15,6 +15,12 @@
   html {
     direction: rtl;
   }
+  
+  /* Form inputs in RTL mode */
+  input, textarea, select, .input, [type="text"], [type="email"], [type="password"], [type="number"] {
+    text-align: right;
+    direction: rtl;
+  }
 }
 
 /* RTL Support */
@@ -24,6 +30,47 @@
 
 .ltr {
   direction: ltr;
+}
+
+/* Form elements RTL styling */
+.rtl input,
+.rtl textarea,
+.rtl select,
+.rtl .input,
+.rtl [type="text"],
+.rtl [type="email"],
+.rtl [type="password"],
+.rtl [type="number"] {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Fix input placeholders for RTL */
+.rtl input::placeholder,
+.rtl textarea::placeholder {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Fix search input with icon for RTL */
+.rtl .search-input {
+  padding-right: 2.5rem;
+  padding-left: 0.75rem;
+}
+
+.rtl .search-icon {
+  left: auto;
+  right: 0.75rem;
+}
+
+/* Form labels RTL */
+.rtl label {
+  text-align: right;
+}
+
+/* Form validation messages RTL */
+.rtl .error-message {
+  text-align: right;
 }
 
 /* Flip FlexBox and Grid Direction for RTL */
@@ -145,4 +192,20 @@
 
 .animate-slide-in {
   animation: slide-in-rtl 0.3s ease-out forwards;
+}
+
+/* Fix dropdown menus for RTL */
+.rtl .dropdown-menu {
+  transform-origin: top right;
+}
+
+/* Fix button icon alignment for RTL */
+.rtl .button-icon-right {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+.rtl .button-icon-left {
+  margin-right: 0;
+  margin-left: 0.5rem;
 }

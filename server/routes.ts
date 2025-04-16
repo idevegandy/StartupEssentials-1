@@ -2,7 +2,9 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
-import { insertRestaurantSchema, insertCategorySchema, insertMenuItemSchema } from "@shared/schema";
+import { insertRestaurantSchema, insertCategorySchema, insertMenuItemSchema, users } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import path from "path";
 import fs from "fs/promises";
@@ -412,17 +414,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const restaurantId = parseInt(req.params.id);
       
-      // Get users for this restaurant (not exposing passwords)
-      const allUsers = Array.from((storage as any).users.values());
-      const users = allUsers
-        .filter(user => user.restaurantId === restaurantId)
-        .map(user => {
-          const { password, ...userData } = user;
-          return userData;
-        });
+      // Get all users from database
+      const allUsers = await db.select({
+        id: users.id,
+        name: users.name,
+        username: users.username,
+        email: users.email,
+        role: users.role,
+        restaurantId: users.restaurantId,
+        createdAt: users.createdAt
+      }).from(users).where(eq(users.restaurantId, restaurantId));
       
-      res.json(users);
+      res.json(allUsers);
     } catch (error) {
+      console.error("Error fetching restaurant users:", error);
       res.status(500).json({ message: "Error fetching restaurant users" });
     }
   });

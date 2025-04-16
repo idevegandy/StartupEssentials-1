@@ -1,8 +1,12 @@
 import { restaurants, categories, menuItems, users, type User, type InsertUser, type Restaurant, type InsertRestaurant, type Category, type InsertCategory, type MenuItem, type InsertMenuItem } from "@shared/schema";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { pool } from "./db";
+import { eq, and } from "drizzle-orm";
 
-const MemoryStore = createMemoryStore(session);
+// Use Postgres for sessions
+const PostgresSessionStore = connectPg(session);
 
 // Storage interface
 export interface IStorage {
@@ -38,205 +42,261 @@ export interface IStorage {
   deleteMenuItem(id: number): Promise<boolean>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private restaurants: Map<number, Restaurant>;
-  private categories: Map<number, Category>;
-  private menuItems: Map<number, MenuItem>;
-  sessionStore: session.SessionStore;
-  
-  private userCurrentId: number;
-  private restaurantCurrentId: number;
-  private categoryCurrentId: number;
-  private menuItemCurrentId: number;
+export class DatabaseStorage implements IStorage {
+  sessionStore: any;
 
   constructor() {
-    this.users = new Map();
-    this.restaurants = new Map();
-    this.categories = new Map();
-    this.menuItems = new Map();
-    
-    this.userCurrentId = 1;
-    this.restaurantCurrentId = 1;
-    this.categoryCurrentId = 1;
-    this.menuItemCurrentId = 1;
-    
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
-    });
-    
-    // Add a default super admin
-    this.users.set(1, {
-      id: 1,
-      name: "Super Admin",
-      username: "admin",
-      email: "admin@example.com",
-      password: "$2b$10$QzgLhV6RvyJJPP9cDEG32eA4TOMCNjmhi8YAZbZuAMUlO1.U5o1rm", // "password"
-      role: "super_admin",
-      restaurantId: null,
-      createdAt: new Date(),
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
     });
   }
 
-  // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    try {
+      const result = await db.select().from(users).where(eq(users.id, id));
+      return result[0];
+    } catch (error) {
+      console.error("Error getting user:", error);
+      return undefined;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    try {
+      const result = await db.select().from(users).where(eq(users.username, username));
+      return result[0];
+    } catch (error) {
+      console.error("Error getting user by username:", error);
+      return undefined;
+    }
   }
-  
+
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.email === email,
-    );
+    try {
+      const result = await db.select().from(users).where(eq(users.email, email));
+      return result[0];
+    } catch (error) {
+      console.error("Error getting user by email:", error);
+      return undefined;
+    }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userCurrentId++;
-    const user: User = { ...insertUser, id, createdAt: new Date() };
-    this.users.set(id, user);
-    return user;
+    try {
+      const result = await db.insert(users).values(insertUser).returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
   }
-  
+
   async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    const updatedUser = { ...user, ...userData };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+    try {
+      const result = await db.update(users)
+        .set(userData)
+        .where(eq(users.id, id))
+        .returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return undefined;
+    }
   }
-  
+
   async deleteUser(id: number): Promise<boolean> {
-    return this.users.delete(id);
+    try {
+      const result = await db.delete(users).where(eq(users.id, id)).returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return false;
+    }
   }
-  
-  // Restaurant methods
+
   async getRestaurant(id: number): Promise<Restaurant | undefined> {
-    return this.restaurants.get(id);
+    try {
+      const result = await db.select().from(restaurants).where(eq(restaurants.id, id));
+      return result[0];
+    } catch (error) {
+      console.error("Error getting restaurant:", error);
+      return undefined;
+    }
   }
-  
+
   async getRestaurantBySlug(slug: string): Promise<Restaurant | undefined> {
-    return Array.from(this.restaurants.values()).find(
-      (restaurant) => restaurant.slug === slug,
-    );
+    try {
+      const result = await db.select().from(restaurants).where(eq(restaurants.slug, slug));
+      return result[0];
+    } catch (error) {
+      console.error("Error getting restaurant by slug:", error);
+      return undefined;
+    }
   }
-  
+
   async getAllRestaurants(): Promise<Restaurant[]> {
-    return Array.from(this.restaurants.values());
+    try {
+      return await db.select().from(restaurants);
+    } catch (error) {
+      console.error("Error getting all restaurants:", error);
+      return [];
+    }
   }
-  
+
   async createRestaurant(insertRestaurant: InsertRestaurant): Promise<Restaurant> {
-    const id = this.restaurantCurrentId++;
-    const restaurant: Restaurant = { ...insertRestaurant, id, createdAt: new Date() };
-    this.restaurants.set(id, restaurant);
-    return restaurant;
+    try {
+      const result = await db.insert(restaurants).values(insertRestaurant).returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error creating restaurant:", error);
+      throw error;
+    }
   }
-  
+
   async updateRestaurant(id: number, restaurantData: Partial<Restaurant>): Promise<Restaurant | undefined> {
-    const restaurant = this.restaurants.get(id);
-    if (!restaurant) return undefined;
-    
-    const updatedRestaurant = { ...restaurant, ...restaurantData };
-    this.restaurants.set(id, updatedRestaurant);
-    return updatedRestaurant;
+    try {
+      const result = await db.update(restaurants)
+        .set(restaurantData)
+        .where(eq(restaurants.id, id))
+        .returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error updating restaurant:", error);
+      return undefined;
+    }
   }
-  
+
   async deleteRestaurant(id: number): Promise<boolean> {
-    // Also delete associated categories, menu items, and admin users
-    const categories = await this.getCategoriesByRestaurantId(id);
-    for (const category of categories) {
-      await this.deleteCategory(category.id);
+    try {
+      // First delete all related users
+      await db.delete(users).where(eq(users.restaurantId, id));
+      
+      // Then delete the restaurant (categories and menu items will be deleted by cascade)
+      const result = await db.delete(restaurants).where(eq(restaurants.id, id)).returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error deleting restaurant:", error);
+      return false;
     }
-    
-    const users = Array.from(this.users.values()).filter(user => user.restaurantId === id);
-    for (const user of users) {
-      await this.deleteUser(user.id);
-    }
-    
-    return this.restaurants.delete(id);
   }
-  
-  // Category methods
+
   async getCategory(id: number): Promise<Category | undefined> {
-    return this.categories.get(id);
-  }
-  
-  async getCategoriesByRestaurantId(restaurantId: number): Promise<Category[]> {
-    return Array.from(this.categories.values()).filter(
-      (category) => category.restaurantId === restaurantId,
-    );
-  }
-  
-  async createCategory(insertCategory: InsertCategory): Promise<Category> {
-    const id = this.categoryCurrentId++;
-    const category: Category = { ...insertCategory, id, createdAt: new Date() };
-    this.categories.set(id, category);
-    return category;
-  }
-  
-  async updateCategory(id: number, categoryData: Partial<Category>): Promise<Category | undefined> {
-    const category = this.categories.get(id);
-    if (!category) return undefined;
-    
-    const updatedCategory = { ...category, ...categoryData };
-    this.categories.set(id, updatedCategory);
-    return updatedCategory;
-  }
-  
-  async deleteCategory(id: number): Promise<boolean> {
-    // Also delete associated menu items
-    const menuItems = await this.getMenuItemsByCategoryId(id);
-    for (const menuItem of menuItems) {
-      await this.deleteMenuItem(menuItem.id);
+    try {
+      const result = await db.select().from(categories).where(eq(categories.id, id));
+      return result[0];
+    } catch (error) {
+      console.error("Error getting category:", error);
+      return undefined;
     }
-    
-    return this.categories.delete(id);
   }
-  
-  // MenuItem methods
+
+  async getCategoriesByRestaurantId(restaurantId: number): Promise<Category[]> {
+    try {
+      return await db.select().from(categories).where(eq(categories.restaurantId, restaurantId));
+    } catch (error) {
+      console.error("Error getting categories by restaurant ID:", error);
+      return [];
+    }
+  }
+
+  async createCategory(insertCategory: InsertCategory): Promise<Category> {
+    try {
+      const result = await db.insert(categories).values(insertCategory).returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error creating category:", error);
+      throw error;
+    }
+  }
+
+  async updateCategory(id: number, categoryData: Partial<Category>): Promise<Category | undefined> {
+    try {
+      const result = await db.update(categories)
+        .set(categoryData)
+        .where(eq(categories.id, id))
+        .returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error updating category:", error);
+      return undefined;
+    }
+  }
+
+  async deleteCategory(id: number): Promise<boolean> {
+    try {
+      // Menu items will be deleted by cascade
+      const result = await db.delete(categories).where(eq(categories.id, id)).returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      return false;
+    }
+  }
+
   async getMenuItem(id: number): Promise<MenuItem | undefined> {
-    return this.menuItems.get(id);
+    try {
+      const result = await db.select().from(menuItems).where(eq(menuItems.id, id));
+      return result[0];
+    } catch (error) {
+      console.error("Error getting menu item:", error);
+      return undefined;
+    }
   }
-  
+
   async getMenuItemsByCategoryId(categoryId: number): Promise<MenuItem[]> {
-    return Array.from(this.menuItems.values()).filter(
-      (menuItem) => menuItem.categoryId === categoryId,
-    );
+    try {
+      return await db.select().from(menuItems).where(eq(menuItems.categoryId, categoryId));
+    } catch (error) {
+      console.error("Error getting menu items by category ID:", error);
+      return [];
+    }
   }
-  
+
   async getMenuItemsByRestaurantId(restaurantId: number): Promise<MenuItem[]> {
-    return Array.from(this.menuItems.values()).filter(
-      (menuItem) => menuItem.restaurantId === restaurantId,
-    );
+    try {
+      return await db.select().from(menuItems).where(eq(menuItems.restaurantId, restaurantId));
+    } catch (error) {
+      console.error("Error getting menu items by restaurant ID:", error);
+      return [];
+    }
   }
-  
+
   async createMenuItem(insertMenuItem: InsertMenuItem): Promise<MenuItem> {
-    const id = this.menuItemCurrentId++;
-    const menuItem: MenuItem = { ...insertMenuItem, id, createdAt: new Date() };
-    this.menuItems.set(id, menuItem);
-    return menuItem;
+    try {
+      const result = await db.insert(menuItems).values(insertMenuItem).returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error creating menu item:", error);
+      throw error;
+    }
   }
-  
+
   async updateMenuItem(id: number, menuItemData: Partial<MenuItem>): Promise<MenuItem | undefined> {
-    const menuItem = this.menuItems.get(id);
-    if (!menuItem) return undefined;
-    
-    const updatedMenuItem = { ...menuItem, ...menuItemData };
-    this.menuItems.set(id, updatedMenuItem);
-    return updatedMenuItem;
+    try {
+      const result = await db.update(menuItems)
+        .set(menuItemData)
+        .where(eq(menuItems.id, id))
+        .returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error updating menu item:", error);
+      return undefined;
+    }
   }
-  
+
   async deleteMenuItem(id: number): Promise<boolean> {
-    return this.menuItems.delete(id);
+    try {
+      const result = await db.delete(menuItems).where(eq(menuItems.id, id)).returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error deleting menu item:", error);
+      return false;
+    }
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
