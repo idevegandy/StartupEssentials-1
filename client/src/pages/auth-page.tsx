@@ -103,12 +103,12 @@ export default function AuthPage() {
                     control={loginForm.control}
                     name="email"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>דוא"ל</FormLabel>
+                      <FormItem className="text-right">
+                        <FormLabel className="text-right">דוא"ל</FormLabel>
                         <FormControl>
-                          <Input placeholder="mail@example.com" {...field} dir="ltr" />
+                          <Input placeholder="mail@example.com" {...field} dir="ltr" className="text-left" />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-right" />
                       </FormItem>
                     )}
                   />
@@ -117,12 +117,12 @@ export default function AuthPage() {
                     control={loginForm.control}
                     name="password"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>סיסמה</FormLabel>
+                      <FormItem className="text-right">
+                        <FormLabel className="text-right">סיסמה</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} dir="ltr" />
+                          <Input type="password" {...field} dir="ltr" className="text-left" />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-right" />
                       </FormItem>
                     )}
                   />
@@ -144,7 +144,7 @@ export default function AuthPage() {
 
                   {/* Quick login buttons for development */}
                   <div className="pt-4 border-t mt-4">
-                    <p className="text-sm text-slate-500 mb-2">כניסה מהירה לפיתוח:</p>
+                    <p className="text-sm text-slate-500 mb-2 text-right">כניסה מהירה לפיתוח:</p>
                     <div className="grid grid-cols-2 gap-2">
                       <Button
                         type="button"
@@ -177,12 +177,12 @@ export default function AuthPage() {
                     control={registerForm.control}
                     name="email"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>דוא"ל</FormLabel>
+                      <FormItem className="text-right">
+                        <FormLabel className="text-right">דוא"ל</FormLabel>
                         <FormControl>
-                          <Input placeholder="mail@example.com" {...field} dir="ltr" />
+                          <Input placeholder="mail@example.com" {...field} dir="ltr" className="text-left" />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-right" />
                       </FormItem>
                     )}
                   />
@@ -191,12 +191,12 @@ export default function AuthPage() {
                     control={registerForm.control}
                     name="password"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>סיסמה</FormLabel>
+                      <FormItem className="text-right">
+                        <FormLabel className="text-right">סיסמה</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} dir="ltr" />
+                          <Input type="password" {...field} dir="ltr" className="text-left" />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-right" />
                       </FormItem>
                     )}
                   />
