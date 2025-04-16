@@ -63,8 +63,36 @@
   right: 0.75rem;
 }
 
-/* Form labels RTL */
-.rtl label {
+/* Form and Card RTL styling */
+.rtl label,
+.rtl .card-title,
+.rtl h1,
+.rtl h2,
+.rtl h3,
+.rtl h4,
+.rtl h5,
+.rtl h6,
+.rtl p,
+.rtl span,
+.rtl div,
+.rtl li,
+.rtl td,
+.rtl th {
+  text-align: right;
+}
+
+.rtl .card-header,
+.rtl .card-content,
+.rtl .card-footer {
+  text-align: right;
+}
+
+/* Fix titles explicitly */
+.rtl [data-radix-popper-content-wrapper] {
+  text-align: right;
+}
+
+.rtl [role="dialog"] {
   text-align: right;
 }
 
