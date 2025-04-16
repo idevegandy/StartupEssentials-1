@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
@@ -100,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
   
   // Configure multer for file uploads
-  const storage = multer.diskStorage({
+  const multerStorage = multer.diskStorage({
     destination: function (req, file, cb) {
       const uploadDir = path.join(process.cwd(), 'uploads/images');
       // Create directory if it doesn't exist
@@ -128,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
   
   const upload = multer({ 
-    storage, 
+    storage: multerStorage, 
     fileFilter,
     limits: {
       fileSize: 5 * 1024 * 1024, // 5MB max file size
@@ -1416,6 +1416,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error('Error creating test data:', error);
         res.status(500).json({ message: 'Internal server error' });
+      }
+    });
+    
+    // File Upload routes
+    
+    // Serve uploaded files statically
+    app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+    
+    // Upload image files endpoint
+    app.post('/api/upload/image', authMiddleware, upload.single('image'), async (req: AuthenticatedRequest, res: Response) => {
+      try {
+        if (!req.file) {
+          return res.status(400).json({ message: "No file uploaded or invalid file type" });
+        }
+        
+        // Create URL for the uploaded file
+        const fileUrl = `/uploads/images/${req.file.filename}`;
+        
+        // Create an activity log
+        await storage.createActivityLog({
+          userId: req.user?.id,
+          action: "upload",
+          details: { filename: req.file.originalname, fileUrl },
+          entityType: "file",
+          entityId: 0
+        });
+        
+        res.json({ 
+          url: fileUrl,
+          filename: req.file.filename,
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size
+        });
+      } catch (error) {
+        console.error('File upload error:', error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
+    
+    // Upload restaurant logo endpoint
+    app.post('/api/restaurants/:id/upload/logo', authMiddleware, validateOwnership, upload.single('logo'), async (req: AuthenticatedRequest, res: Response) => {
+      try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+          return res.status(400).json({ message: "Invalid restaurant ID" });
+        }
+        
+        if (!req.file) {
+          return res.status(400).json({ message: "No file uploaded or invalid file type" });
+        }
+        
+        const fileUrl = `/uploads/images/${req.file.filename}`;
+        
+        // Update restaurant with new logo URL
+        const updatedRestaurant = await storage.updateRestaurant(id, { logo: fileUrl });
+        
+        if (!updatedRestaurant) {
+          return res.status(404).json({ message: "Restaurant not found" });
+        }
+        
+        // Create an activity log
+        await storage.createActivityLog({
+          userId: req.user?.id,
+          action: "upload_logo",
+          details: { restaurantName: updatedRestaurant.name },
+          entityType: "restaurant",
+          entityId: updatedRestaurant.id,
+          restaurantId: updatedRestaurant.id
+        });
+        
+        res.json({ 
+          url: fileUrl,
+          restaurant: updatedRestaurant
+        });
+      } catch (error) {
+        console.error('Logo upload error:', error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
+    
+    // Upload menu item image endpoint
+    app.post('/api/menu-items/:id/upload/image', authMiddleware, upload.single('image'), async (req: AuthenticatedRequest, res: Response) => {
+      try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+          return res.status(400).json({ message: "Invalid menu item ID" });
+        }
+        
+        if (!req.file) {
+          return res.status(400).json({ message: "No file uploaded or invalid file type" });
+        }
+        
+        // Get the menu item to check ownership
+        const menuItem = await storage.getMenuItem(id);
+        if (!menuItem) {
+          return res.status(404).json({ message: "Menu item not found" });
+        }
+        
+        // Check if user has access to this restaurant
+        const restaurant = await storage.getRestaurant(menuItem.restaurantId);
+        if (!restaurant) {
+          return res.status(404).json({ message: "Restaurant not found" });
+        }
+        
+        if (req.user?.role !== "super_admin" && restaurant.adminId !== req.user?.id) {
+          return res.status(403).json({ message: "Forbidden: You don't have access to this menu item" });
+        }
+        
+        const fileUrl = `/uploads/images/${req.file.filename}`;
+        
+        // Update menu item with new image URL
+        const updatedMenuItem = await storage.updateMenuItem(id, { image: fileUrl });
+        
+        if (!updatedMenuItem) {
+          return res.status(404).json({ message: "Menu item not found" });
+        }
+        
+        // Create an activity log
+        await storage.createActivityLog({
+          userId: req.user?.id,
+          action: "upload_image",
+          details: { menuItemName: updatedMenuItem.name },
+          entityType: "menu_item",
+          entityId: updatedMenuItem.id,
+          restaurantId: updatedMenuItem.restaurantId
+        });
+        
+        res.json({ 
+          url: fileUrl,
+          menuItem: updatedMenuItem
+        });
+      } catch (error) {
+        console.error('Menu item image upload error:', error);
+        res.status(500).json({ message: "Internal server error" });
       }
     });
   }
