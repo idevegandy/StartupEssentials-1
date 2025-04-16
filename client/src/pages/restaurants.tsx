@@ -136,7 +136,7 @@ export default function Restaurants() {
         status: currentRestaurant.status,
         primaryColor: currentRestaurant.primaryColor || "#e65100",
         secondaryColor: currentRestaurant.secondaryColor || "#f57c00",
-        rtl: currentRestaurant.rtl,
+        rtl: currentRestaurant.rtl || false,
       });
     }
   }, [currentRestaurant, action, form]);

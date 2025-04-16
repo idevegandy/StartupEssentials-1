@@ -62,7 +62,7 @@ function App() {
         </Route>
         
         {/* All other routes with AuthProvider */}
-        <Route>
+        <Route path="*">
           <AuthProvider>
             <LocaleProvider>
               <AppContent />
@@ -101,7 +101,7 @@ function AppContent() {
                   <Route path="/statistics" component={Statistics} />
                   <Route path="/settings" component={Settings} />
                   <Route path="/" component={Dashboard} />
-                  <Route component={NotFound} />
+                  <Route path="*" component={NotFound} />
                 </Switch>
               </div>
             </div>
