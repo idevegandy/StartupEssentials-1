@@ -1,47 +1,78 @@
-import { useAuth } from "@/hooks/use-auth";
-import AppLayout from "@/components/layout/app-layout";
-import PageHeader from "@/components/ui/page-header";
-import CategoryList from "@/components/categories/category-list";
-import AddCategoryModal from "@/components/modals/add-category-modal";
 import { useState } from "react";
-import Loading from "@/components/ui/loading";
+import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import AdminLayout from "@/components/layouts/admin-layout";
+import { useAuth } from "@/hooks/use-auth";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function RestaurantCategories() {
   const { user } = useAuth();
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  
-  // Check if admin has a restaurant assigned
-  const restaurantId = user?.restaurantId;
-  
-  if (!restaurantId) {
-    return (
-      <AppLayout>
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-8 text-center">
-          <h2 className="text-xl font-bold text-red-600 mb-2">לא נמצאה מסעדה</h2>
-          <p className="text-slate-500 dark:text-slate-400 mb-4">
-            לא מוגדרת מסעדה לחשבון זה. אנא פנה למנהל המערכת.
-          </p>
-        </div>
-      </AppLayout>
-    );
-  }
-  
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  // Fetch categories for this restaurant
+  const { data: categories, isLoading } = useQuery({
+    queryKey: ['/api/restaurants', user?.restaurantId, 'categories'],
+    queryFn: async () => {
+      if (!user?.restaurantId) return [];
+      const res = await apiRequest('GET', `/api/restaurants/${user.restaurantId}/categories`);
+      const data = await res.json();
+      return data;
+    },
+    enabled: !!user?.restaurantId
+  });
+
   return (
-    <AppLayout title="ניהול קטגוריות">
-      <PageHeader 
-        title="ניהול קטגוריות" 
-        description="הוסף, ערוך ומחק קטגוריות בתפריט המסעדה"
-        actionLabel="הוסף קטגוריה"
-        onAction={() => setIsAddModalOpen(true)}
-      />
-      
-      <CategoryList restaurantId={restaurantId} />
-      
-      <AddCategoryModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        restaurantId={restaurantId}
-      />
-    </AppLayout>
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold tracking-tight">קטגוריות</h1>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="ml-2 h-4 w-4" />
+            קטגוריה חדשה
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {isLoading ? (
+            <p>טוען קטגוריות...</p>
+          ) : categories?.length > 0 ? (
+            categories.map((category: any) => (
+              <Card key={category.id}>
+                <CardHeader>
+                  <CardTitle>{category.name}</CardTitle>
+                  <CardDescription>{category.description || 'ללא תיאור'}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between">
+                    <span>פריטים: {category.items?.length || 0}</span>
+                    <div className="space-x-2">
+                      <Button variant="outline" size="sm">ערוך</Button>
+                      <Button variant="destructive" size="sm">מחק</Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>אין קטגוריות</CardTitle>
+                <CardDescription>לא נמצאו קטגוריות למסעדה זו.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => setIsAddDialogOpen(true)}>
+                  <Plus className="ml-2 h-4 w-4" />
+                  צור קטגוריה ראשונה
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* TODO: Add Category Dialog */}
+    </AdminLayout>
   );
 }
