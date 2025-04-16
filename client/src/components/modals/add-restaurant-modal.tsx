@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -66,14 +66,14 @@ export default function AddRestaurantModal({ isOpen, onClose }: AddRestaurantMod
   const watchRestaurantName = form.watch("restaurantName");
   
   // Update slug automatically when restaurant name changes
-  useState(() => {
+  useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === "restaurantName") {
         form.setValue("restaurantSlug", slugify(value.restaurantName || ""));
       }
     });
     return () => subscription.unsubscribe();
-  });
+  }, [form]);
   
   const addRestaurantMutation = useMutation({
     mutationFn: async (data: CreateRestaurantData) => {
