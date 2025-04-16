@@ -192,7 +192,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Remove password from response
       const { password, ...userWithoutPassword } = user;
       
-      res.json(userWithoutPassword);
+      // If restaurant admin, fetch their restaurants
+      let userResponse = { ...userWithoutPassword };
+      
+      if (user.role === "restaurant_admin") {
+        const restaurants = await storage.getRestaurantsByAdminId(user.id);
+        userResponse = { ...userWithoutPassword, restaurants };
+      } else if (user.role === "super_admin") {
+        // Optionally fetch all restaurants for super admins if needed
+        const restaurants = await storage.getAllRestaurants();
+        userResponse = { ...userWithoutPassword, restaurants };
+      }
+      
+      res.json(userResponse);
     } catch (error) {
       console.error('Get current user error:', error);
       res.status(500).json({ message: "Internal server error" });

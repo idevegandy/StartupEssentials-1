@@ -2,12 +2,23 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+interface Restaurant {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  logo?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+}
+
 interface User {
   id: number;
   username: string;
   name: string;
   email: string;
   role: string;
+  restaurants?: Restaurant[];
 }
 
 interface AuthContextType {

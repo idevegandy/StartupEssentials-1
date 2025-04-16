@@ -1,0 +1,114 @@
+ Feature Test Prompt – CMS Restaurant Menu
+⚙️ Goal: Test the full flow from Super Admin creating a restaurant, to Restaurant Admin managing their menu page (categories + items).
+
+🔹 Step-by-Step Test Scenario
+🔸 1. Login as Super Admin
+✅ Go to Super Admin login page (/admin/login)
+
+✅ Login using valid Super Admin credentials
+
+✅ Access the Super Admin dashboard
+
+🔸 2. Create New Restaurant + Admin User
+✅ Click on “Add Restaurant” button
+
+✅ Fill in:
+
+Restaurant name
+
+Admin user email
+
+Password
+
+✅ Submit and check:
+
+Restaurant is created
+
+A new restaurant admin user is linked to this restaurant
+
+A unique public menu page is generated at /menus/{slug} (viewable even if empty)
+
+Restaurant is visible in the Super Admin table
+
+“פעולות” (Actions) button shows options:
+
+View admin email/password
+
+Edit
+
+Delete
+
+🔸 3. Login as Restaurant Admin
+✅ Log out from Super Admin
+
+✅ Go to Restaurant Admin login page (/restaurant/login or relevant route)
+
+✅ Login using the new restaurant admin credentials
+
+✅ Check that the dashboard loads correctly and is scoped only to their own restaurant
+
+🔸 4. Create Categories
+✅ Go to Categories section
+
+✅ Add at least 2 categories:
+
+Add icon and name
+
+✅ Confirm:
+
+Categories are saved
+
+Categories are visible in the list
+
+Categories show up on the public menu page
+
+🔸 5. Add Menu Items
+✅ Go to Items section
+
+✅ Under each category, add 1–2 items:
+
+Upload image
+
+Add item name
+
+Add short description
+
+Add price in shekels (₪)
+
+✅ Confirm:
+
+Items appear under the correct category
+
+Images are uploaded and displayed
+
+Prices and descriptions are correct
+
+🔸 6. Check Public Menu Page
+✅ Visit /menus/{slug}
+
+✅ Confirm:
+
+Logo, categories, and items are visible
+
+RTL layout is applied
+
+Menu works well on mobile
+
+Animations/slides between sections work smoothly
+
+QR code and share link are visible and working
+
+🔐 Permission Checks
+✅ Restaurant admin cannot:
+
+View or manage any other restaurant
+
+Access Super Admin panel or restricted routes
+
+✅ Super Admin can:
+
+See all restaurants
+
+Edit or delete any admin
+
+View all menu pages

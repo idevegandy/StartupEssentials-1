@@ -149,45 +149,50 @@ export function Sidebar() {
         )}
 
         {/* Restaurant Admin Navigation */}
-        {isRestaurantAdmin && (
+        {isRestaurantAdmin && user?.restaurants?.length > 0 && (
           <div>
             <div className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase">{t("restaurant_management")}</div>
             <nav>
-              <NavItem 
-                href="/" 
-                icon={<Home size={18} />} 
-                label={t("general")} 
-                isActive={location === "/"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
-              <NavItem 
-                href="/menu-editor" 
-                icon={<BookOpen size={18} />} 
-                label={t("menu_editor")} 
-                isActive={location === "/menu-editor"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
-              <NavItem 
-                href="/appearance" 
-                icon={<Palette size={18} />} 
-                label={t("appearance")} 
-                isActive={location === "/appearance"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
-              <NavItem 
-                href="/qr-codes" 
-                icon={<QrCode size={18} />} 
-                label={t("qr_codes")} 
-                isActive={location === "/qr-codes"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
-              <NavItem 
-                href="/social-media" 
-                icon={<Share2 size={18} />} 
-                label={t("social_media")} 
-                isActive={location === "/social-media"} 
-                onClick={() => setIsMobileOpen(false)}
-              />
+              {user.restaurants.map((restaurant) => (
+                <div key={restaurant.id} className="mb-2">
+                  <div className="px-4 py-2 text-sm font-semibold text-primary">{restaurant.name}</div>
+                  <NavItem 
+                    href={`/restaurant/${restaurant.id}/dashboard`}
+                    icon={<Home size={18} />} 
+                    label={t("general")} 
+                    isActive={location === `/restaurant/${restaurant.id}/dashboard`} 
+                    onClick={() => setIsMobileOpen(false)}
+                  />
+                  <NavItem 
+                    href={`/restaurant/${restaurant.id}/menu`}
+                    icon={<BookOpen size={18} />} 
+                    label={t("menu_editor")} 
+                    isActive={location === `/restaurant/${restaurant.id}/menu`} 
+                    onClick={() => setIsMobileOpen(false)}
+                  />
+                  <NavItem 
+                    href={`/restaurant/${restaurant.id}/appearance`}
+                    icon={<Palette size={18} />} 
+                    label={t("appearance")} 
+                    isActive={location === `/restaurant/${restaurant.id}/appearance`} 
+                    onClick={() => setIsMobileOpen(false)}
+                  />
+                  <NavItem 
+                    href={`/restaurant/${restaurant.id}/qr-codes`}
+                    icon={<QrCode size={18} />} 
+                    label={t("qr_codes")} 
+                    isActive={location === `/restaurant/${restaurant.id}/qr-codes`} 
+                    onClick={() => setIsMobileOpen(false)}
+                  />
+                  <NavItem 
+                    href={`/restaurant/${restaurant.id}/social-media`}
+                    icon={<Share2 size={18} />} 
+                    label={t("social_media")} 
+                    isActive={location === `/restaurant/${restaurant.id}/social-media`} 
+                    onClick={() => setIsMobileOpen(false)}
+                  />
+                </div>
+              ))}
             </nav>
           </div>
         )}
