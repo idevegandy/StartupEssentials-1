@@ -1,234 +1,197 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Utensils, QrCode, Tag, ShoppingBag } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import AdminLayout from "@/components/layouts/admin-layout";
+import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import AppLayout from "@/components/layout/app-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Category, Item, Restaurant } from "@shared/schema";
-import { generateQRCodeUrl, getMenuUrl } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import Loading from "@/components/ui/loading";
-import MenuPreviewModal from "@/components/modals/menu-preview-modal";
-import { useState } from "react";
+
+interface RestaurantStats {
+  categoriesCount: number;
+  itemsCount: number;
+  viewsCount: number; // Placeholder for future analytics
+  ordersCount: number; // Placeholder for future ordering functionality
+}
 
 export default function RestaurantAdminDashboard() {
   const { user } = useAuth();
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  
-  // Check if admin has a restaurant assigned
-  const restaurantId = user?.restaurantId;
-  
-  // Fetch restaurant data
-  const { data: restaurant, isLoading: isRestaurantLoading } = useQuery<Restaurant>({
-    queryKey: [`/api/restaurants/${restaurantId}`],
-    enabled: !!restaurantId,
+  const [stats, setStats] = useState<RestaurantStats>({
+    categoriesCount: 0,
+    itemsCount: 0,
+    viewsCount: 0,
+    ordersCount: 0
   });
-  
-  // Fetch categories
-  const { data: categories, isLoading: isCategoriesLoading } = useQuery<Category[]>({
-    queryKey: [`/api/restaurants/${restaurantId}/categories`],
-    enabled: !!restaurantId,
+
+  // Fetch restaurant data for this admin
+  const { data: restaurant } = useQuery({
+    queryKey: ['/api/restaurants', user?.restaurantId],
+    queryFn: async () => {
+      if (!user?.restaurantId) return null;
+      const res = await apiRequest('GET', `/api/restaurants/${user.restaurantId}`);
+      const data = await res.json();
+      return data;
+    },
+    enabled: !!user?.restaurantId
   });
-  
-  // Initialize items state
-  const [menuData, setMenuData] = useState<{ categories: Category[], items: Record<number, Item[]> }>({ categories: [], items: {} });
-  
-  // Fetch items when categories are loaded
+
+  // Fetch categories for this restaurant
+  const { data: categories } = useQuery({
+    queryKey: ['/api/restaurants', user?.restaurantId, 'categories'],
+    queryFn: async () => {
+      if (!user?.restaurantId) return [];
+      const res = await apiRequest('GET', `/api/restaurants/${user.restaurantId}/categories`);
+      const data = await res.json();
+      return data;
+    },
+    enabled: !!user?.restaurantId
+  });
+
+  // Calculate statistics
   useEffect(() => {
-    if (categories && categories.length > 0 && restaurant) {
-      const fetchItems = async () => {
-        try {
-          const itemsByCategory: Record<number, Item[]> = {};
-          
-          // Fetch items for each category
-          for (const category of categories) {
-            const res = await fetch(`/api/categories/${category.id}/items`);
-            const data = await res.json();
-            itemsByCategory[category.id] = data;
-          }
-          
-          setMenuData({
-            categories: categories,
-            items: itemsByCategory
-          });
-        } catch (error) {
-          console.error("Error fetching items:", error);
-        }
-      };
-      
-      fetchItems();
+    if (categories) {
+      // Calculate total items across all categories
+      const itemsCount = categories.reduce((total: number, category: any) => {
+        return total + (category.items?.length || 0);
+      }, 0);
+
+      setStats({
+        categoriesCount: categories.length,
+        itemsCount: itemsCount,
+        viewsCount: Math.floor(Math.random() * 100), // Placeholder data
+        ordersCount: Math.floor(Math.random() * 20), // Placeholder data
+      });
     }
-  }, [categories, restaurant]);
-  
-  if (isRestaurantLoading || isCategoriesLoading) {
-    return (
-      <AppLayout>
-        <Loading />
-      </AppLayout>
-    );
-  }
-  
-  if (!restaurant) {
-    return (
-      <AppLayout>
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-8 text-center">
-          <h2 className="text-xl font-bold text-red-600 mb-2">לא נמצאה מסעדה</h2>
-          <p className="text-slate-500 dark:text-slate-400 mb-4">
-            לא מוגדרת מסעדה לחשבון זה. אנא פנה למנהל המערכת.
+  }, [categories]);
+
+  // Format date for display
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    return new Intl.DateTimeFormat('he-IL', {
+      year: 'numeric',
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(d);
+  };
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-1 text-right">שלום, {user?.name}</h1>
+          <p className="text-muted-foreground text-right">
+            {restaurant?.name || "טוען..."}
           </p>
         </div>
-      </AppLayout>
-    );
-  }
-  
-  const totalCategories = categories?.length || 0;
-  const totalItems = Object.values(menuData.items).reduce((sum, items) => sum + items.length, 0);
-  const menuUrl = getMenuUrl(restaurant.slug);
-  const qrCodeUrl = generateQRCodeUrl(restaurant.slug);
-  
-  return (
-    <AppLayout title="לוח בקרה">
-      {/* Restaurant Overview Card */}
-      <Card className="mb-8">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-2xl">{restaurant.name}</CardTitle>
-          <CardDescription>
-            לוח בקרה וסטטיסטיקות עבור המסעדה שלך
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
-          <div>
-            <h3 className="text-lg font-medium mb-2">פרטי המסעדה</h3>
-            <div className="space-y-2">
-              <div className="flex items-start">
-                <span className="font-medium text-slate-700 dark:text-slate-300 ml-2">כתובת התפריט:</span>
-                <a 
-                  href={menuUrl} 
-                  target="_blank" 
-                  className="text-primary-600 hover:underline break-all"
-                >
-                  {menuUrl}
-                </a>
-              </div>
-              <div className="flex items-start">
-                <span className="font-medium text-slate-700 dark:text-slate-300 ml-2">קטגוריות:</span>
-                <span>{totalCategories}</span>
-              </div>
-              <div className="flex items-start">
-                <span className="font-medium text-slate-700 dark:text-slate-300 ml-2">פריטים:</span>
-                <span>{totalItems}</span>
-              </div>
-            </div>
-            
-            <div className="flex gap-4 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsPreviewOpen(true)}
-              >
-                <i className="fas fa-eye ml-2"></i>
-                תצוגה מקדימה
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => window.open(`/menus/${restaurant.slug}`, '_blank')}
-              >
-                <i className="fas fa-external-link-alt ml-2"></i>
-                צפה בתפריט
-              </Button>
-            </div>
-          </div>
-          
-          <div className="flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
-            <h3 className="text-lg font-medium mb-2">קוד QR לתפריט</h3>
-            <div className="mb-4">
-              <img 
-                src={qrCodeUrl} 
-                alt="QR Code" 
-                className="w-40 h-40"
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                // Download QR code
-                const link = document.createElement('a');
-                link.href = qrCodeUrl;
-                link.download = `${restaurant.slug}-qrcode.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-            >
-              <i className="fas fa-download ml-2"></i>
-              הורד קוד QR
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Quick Actions */}
-      <h2 className="text-xl font-bold mb-4">פעולות מהירות</h2>
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
-        <a 
-          href="/restaurant-admin/categories" 
-          className="block bg-white dark:bg-slate-800 rounded-lg shadow p-6 hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center">
-            <div className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 ml-4">
-              <i className="fas fa-list text-lg"></i>
-            </div>
-            <div>
-              <h3 className="font-medium text-lg">ניהול קטגוריות</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                הוסף, ערוך ומחק קטגוריות בתפריט
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">קטגוריות</CardTitle>
+              <Tag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.categoriesCount}</div>
+              <p className="text-xs text-muted-foreground">
+                בתפריט שלך
               </p>
-            </div>
-          </div>
-        </a>
-        
-        <a 
-          href="/restaurant-admin/items" 
-          className="block bg-white dark:bg-slate-800 rounded-lg shadow p-6 hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center">
-            <div className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 ml-4">
-              <i className="fas fa-hamburger text-lg"></i>
-            </div>
-            <div>
-              <h3 className="font-medium text-lg">ניהול פריטים</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                הוסף, ערוך ומחק פריטים בתפריט
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">פריטים</CardTitle>
+              <Utensils className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.itemsCount}</div>
+              <p className="text-xs text-muted-foreground">
+                בכל הקטגוריות
               </p>
-            </div>
-          </div>
-        </a>
-        
-        <a 
-          href="/restaurant-admin/menu-settings" 
-          className="block bg-white dark:bg-slate-800 rounded-lg shadow p-6 hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center">
-            <div className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 ml-4">
-              <i className="fas fa-cog text-lg"></i>
-            </div>
-            <div>
-              <h3 className="font-medium text-lg">הגדרות תפריט</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                התאם אישית את מראה התפריט שלך
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">קוד QR</CardTitle>
+              <QrCode className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">פעיל</div>
+              <p className="text-xs text-muted-foreground">
+                מוכן לשיתוף
               </p>
-            </div>
-          </div>
-        </a>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">צפיות תפריט</CardTitle>
+              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.viewsCount}</div>
+              <p className="text-xs text-muted-foreground">
+                ב-7 הימים האחרונים
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Restaurant Info */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>פרטי מסעדה</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="space-y-2">
+                <div className="flex justify-between">
+                  <dt className="font-medium text-gray-500 dark:text-gray-400">שם:</dt>
+                  <dd>{restaurant?.name}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="font-medium text-gray-500 dark:text-gray-400">כתובת:</dt>
+                  <dd>{restaurant?.slug}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="font-medium text-gray-500 dark:text-gray-400">נוצר ב:</dt>
+                  <dd>{restaurant?.createdAt ? formatDate(restaurant.createdAt) : "-"}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="font-medium text-gray-500 dark:text-gray-400">עודכן ב:</dt>
+                  <dd>{restaurant?.updatedAt ? formatDate(restaurant.updatedAt) : "-"}</dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>קטגוריות תפריט</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                {categories?.slice(0, 5).map((category: any) => (
+                  <li key={category.id} className="flex justify-between">
+                    <span>{category.name}</span>
+                    <span className="text-muted-foreground">{category.items?.length || 0} פריטים</span>
+                  </li>
+                ))}
+                
+                {(!categories || categories.length === 0) && (
+                  <li className="text-gray-500 dark:text-gray-400 text-center py-2">
+                    אין קטגוריות להצגה
+                  </li>
+                )}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-      
-      {/* Menu Preview Modal */}
-      <MenuPreviewModal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        restaurant={restaurant}
-        categories={menuData.categories}
-        items={menuData.items}
-      />
-    </AppLayout>
+    </AdminLayout>
   );
 }

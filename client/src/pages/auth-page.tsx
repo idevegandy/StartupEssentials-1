@@ -142,9 +142,8 @@ export default function AuthPage() {
                     )}
                   </Button>
 
-                  {/* Quick login buttons for development */}
+                  {/* Quick login buttons without heading */}
                   <div className="pt-4 border-t mt-4">
-                    <p className="text-sm text-slate-500 mb-2 text-right">כניסה מהירה לפיתוח:</p>
                     <div className="grid grid-cols-2 gap-2">
                       <Button
                         type="button"
