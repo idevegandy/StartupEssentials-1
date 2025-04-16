@@ -29,27 +29,27 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
   const isRestaurantAdmin = user?.role === "restaurant_admin";
 
   const sidebarClass = cn(
-    "flex flex-col w-64 bg-white shadow transition-transform duration-200 fixed inset-y-0 z-50 md:relative md:translate-x-0",
+    "flex flex-col w-64 bg-white shadow transition-transform duration-200 fixed inset-y-0 z-50 md:relative rtl:md:translate-x-0 ltr:md:translate-x-0",
     {
-      "translate-x-0": isOpen,
-      "-translate-x-full": !isOpen,
+      "rtl:translate-x-0 ltr:translate-x-0": isOpen,
+      "rtl:-translate-x-full ltr:translate-x-full": !isOpen,
     }
   );
 
   const superAdminLinks = [
-    { href: "/", icon: <LayoutDashboard className="ml-3 text-lg" />, label: "לוח מחוונים" },
-    { href: "/restaurants", icon: <Store className="ml-3 text-lg" />, label: "רשימת מסעדות" },
-    { href: "/settings", icon: <Settings className="ml-3 text-lg" />, label: "הגדרות" },
-    { href: "/profile", icon: <User className="ml-3 text-lg" />, label: "פרופיל" },
+    { href: "/", icon: <LayoutDashboard className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "לוח מחוונים" },
+    { href: "/restaurants", icon: <Store className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "רשימת מסעדות" },
+    { href: "/settings", icon: <Settings className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "הגדרות" },
+    { href: "/profile", icon: <User className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "פרופיל" },
   ];
 
   const restaurantAdminLinks = [
-    { href: "/", icon: <LayoutDashboard className="ml-3 text-lg" />, label: "לוח מחוונים" },
-    { href: "/categories", icon: <Tags className="ml-3 text-lg" />, label: "קטגוריות" },
-    { href: "/items", icon: <List className="ml-3 text-lg" />, label: "פריטים" },
-    { href: "/customization", icon: <Palette className="ml-3 text-lg" />, label: "התאמה אישית" },
-    { href: "/qr-code", icon: <QrCode className="ml-3 text-lg" />, label: "קוד QR" },
-    { href: "/profile", icon: <User className="ml-3 text-lg" />, label: "פרופיל" },
+    { href: "/restaurant", icon: <LayoutDashboard className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "לוח מחוונים" },
+    { href: "/categories", icon: <Tags className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "קטגוריות" },
+    { href: "/items", icon: <List className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "פריטים" },
+    { href: "/customization", icon: <Palette className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "התאמה אישית" },
+    { href: "/qr-code", icon: <QrCode className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "קוד QR" },
+    { href: "/profile", icon: <User className="ml-3 rtl:ml-3 ltr:mr-3 text-lg" />, label: "פרופיל" },
   ];
 
   const links = isSuperAdmin ? superAdminLinks : restaurantAdminLinks;
@@ -90,7 +90,7 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                 {user?.name?.substring(0, 2).toUpperCase() || "NA"}
               </span>
             </div>
-            <div className="mr-3">
+            <div className="rtl:mr-3 ltr:ml-3">
               <p className="text-sm font-medium">{user?.name || "User"}</p>
               <p className="text-xs opacity-75">{user?.email || user?.username}</p>
             </div>
@@ -108,7 +108,7 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                 className={cn(
                   "sidebar-item flex items-center px-4 py-2 text-sm font-medium rounded-md",
                   location === link.href
-                    ? "active bg-primary-50 text-primary-600 border-r-2 border-primary-600"
+                    ? "active bg-primary-50 text-primary-600 rtl:border-r-2 ltr:border-l-2 border-primary-600"
                     : "text-gray-700 hover:bg-gray-50"
                 )}
               >
@@ -125,7 +125,7 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
             onClick={handleLogout}
             className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600"
           >
-            <LogOut className="ml-2 text-lg" />
+            <LogOut className="rtl:ml-2 ltr:mr-2 text-lg" />
             <span>התנתק</span>
           </button>
         </div>
