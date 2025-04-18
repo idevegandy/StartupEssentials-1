@@ -1,0 +1,109 @@
+ continue the project and set all needed database and to FIX next problems
+🛑 Super Admin Panel:
+The "Add Restaurant" button does not work — clicking it does nothing.
+🔧 Fix the button to open a form where Super Admin can:
+
+Enter Restaurant name
+
+Create and assign a new Restaurant Admin (email + password)
+
+Automatically create a new /menus/{slug} public page
+
+Sidebar menu buttons (like Dashboard, Restaurants list, etc.) are not clickable or not working.
+🔧 Fix sidebar so all routes/pages work properly.
+
+In the restaurant list, the "פעולות" (Actions) button also does not respond.
+🔧 Fix so Super Admin can:
+
+View Restaurant Admin email/password (or a reset password option)
+
+Edit restaurant info or admin
+
+Delete restaurant and associated user
+
+✅ Super Admin Panel — Expected Final Features:
+Add/Edit/Delete restaurants and their admins
+
+View public menu page for each restaurant
+
+Access full list of all restaurants
+
+Manage credentials (password/email) of restaurant admins
+
+Generate and view the restaurant’s QR code and share link
+
+Sidebar menu works correctly and shows only relevant sections (no "Users" or "Categories" — those are scoped per restaurant)
+
+🔧 Restaurant Admin Panel:
+Restaurant Admin panel must work separately and correctly.
+
+Currently, some pages like Categories or Items may not be connected or functional.
+
+🔧 Fix and Ensure:
+Categories page:
+
+Admin can create/edit/delete categories
+
+Each category has an icon and a name
+
+Items page:
+
+Admin can add/edit/delete items under their categories
+
+Each item includes:
+
+Image upload
+
+Name
+
+Short description
+
+Price (₪)
+
+Menu Customization:
+
+Admin can upload a logo
+
+Admin can add/edit social links
+
+Admin can customize the menu colors (background, buttons)
+
+Menu Display:
+
+Admin can preview their own public menu page at /menus/{slug}
+
+Page must be:
+
+Fully responsive and mobile-optimized
+
+RTL layout
+
+Fast and creative with sliding animations between categories
+
+QR Code + Share Link:
+
+Admin must see their auto-generated QR code
+
+Can copy/share their unique menu link
+
+🔐 Permission Logic (Must Be Enforced):
+✅ Super Admin can control everything — no limits.
+
+✅ Restaurant Admins:
+
+Can only manage their own content
+
+Can’t see or edit other restaurants
+
+Can’t access any super admin features
+
+📌 Important Notes:
+Do not remove or break any existing features
+
+Fix broken UI buttons and routes
+
+Apply proper routing and Laravel authorization middleware (auth, role, etc.)
+
+Structure code cleanly using MVC: proper Controllers, Models, Policies if needed
+
+Public menu page must stay clean, light, fast, RTL, and fully mobile-optimized

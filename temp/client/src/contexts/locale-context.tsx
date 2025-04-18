@@ -1,0 +1,396 @@
+import React, { createContext, useContext, useState, useEffect } from "react";
+
+type Direction = "rtl" | "ltr";
+type Language = "he" | "ar" | "en";
+
+interface LocaleContextType {
+  language: Language;
+  setLanguage: (language: Language) => void;
+  dir: Direction;
+  t: (key: string) => string;
+}
+
+const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
+
+export function LocaleProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguage] = useState<Language>("he");
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // Load translations based on selected language
+    const loadTranslations = async () => {
+      try {
+        // In a real app, load translations from a file or API
+        const hebrewTranslations = {
+          "dashboard": "לוח בקרה",
+          "restaurants": "מסעדות",
+          "users": "משתמשים",
+          "categories": "קטגוריות",
+          "statistics": "סטטיסטיקה",
+          "settings": "הגדרות",
+          "logout": "התנתק",
+          "search": "חיפוש...",
+          "add_restaurant": "הוסף מסעדה",
+          "total_restaurants": "סה\"כ מסעדות",
+          "active_users": "משתמשים פעילים",
+          "qr_scans": "סריקות QR",
+          "menu_items": "פריטי תפריט",
+          "from_last_month": "מהחודש שעבר",
+          "recent_restaurants": "מסעדות אחרונות",
+          "name": "שם",
+          "manager": "מנהל",
+          "status": "סטטוס",
+          "items": "פריטים",
+          "scans": "סריקות",
+          "actions": "פעולות",
+          "active": "פעיל",
+          "inactive": "לא פעיל",
+          "setup": "בהקמה",
+          "recent_activity": "פעילות אחרונה",
+          "view_all_activity": "הצג את כל הפעילות",
+          "restaurant_details": "פרטי מסעדה",
+          "restaurant_logo": "לוגו המסעדה",
+          "upload_logo": "העלה לוגו",
+          "remove": "הסר",
+          "restaurant_name": "שם המסעדה",
+          "description": "תיאור",
+          "phone": "טלפון",
+          "address": "כתובת",
+          "social_media": "רשתות חברתיות",
+          "interface_colors": "צבעי ממשק",
+          "primary_color": "צבע ראשי",
+          "secondary_color": "צבע משני",
+          "menu_categories": "קטגוריות תפריט",
+          "add_category": "הוסף קטגוריה",
+          "save_changes": "שמור שינויים",
+          "preview": "תצוגה מקדימה",
+          "qr_code_menu": "קוד QR לתפריט",
+          "generate_qr": "צור QR חדש",
+          "download": "הורד",
+          "print": "הדפס",
+          "qr_description": "צור קוד QR לתפריט שלך כדי שלקוחות יוכלו לגשת אליו במהירות. הקוד מתעדכן אוטומטית כאשר אתה מעדכן את התפריט.",
+          "category_name": "שם הקטגוריה",
+          "category_icon": "אייקון",
+          "category_items": "פריטים בקטגוריה",
+          "show_all_items": "הצג את כל הפריטים",
+          "cancel": "ביטול",
+          "save": "שמור",
+          "menu_share_text": "הצג את התפריט ב",
+          "add_restaurant_title": "הוספת מסעדה חדשה",
+          "add_item_title": "הוספת פריט תפריט",
+          "add_category_title": "הוספת קטגוריה",
+          "edit_restaurant_title": "עריכת מסעדה",
+          "edit_item_title": "עריכת פריט תפריט",
+          "edit_category_title": "עריכת קטגוריה",
+          "delete_confirmation": "האם אתה בטוח שברצונך למחוק?",
+          "delete": "מחק",
+          "username": "שם משתמש",
+          "password": "סיסמה",
+          "email": "דואר אלקטרוני",
+          "role": "תפקיד",
+          "super_admin": "מנהל ראשי",
+          "restaurant_admin": "מנהל מסעדה",
+          "login": "התחבר",
+          "general": "כללי",
+          "menu_editor": "עריכת תפריט",
+          "appearance": "עיצוב",
+          "qr_codes": "קודי QR",
+          "price": "מחיר",
+          "price_shekel": "מחיר (₪)",
+          "discount_price": "מחיר מבצע (₪)",
+          "item_name": "שם הפריט",
+          "item_image": "תמונת פריט",
+          "upload_image": "העלה תמונה",
+          "featured_item": "הצג כפריט מומלץ",
+          "copied_to_clipboard": "הועתק ללוח",
+          "menu_url_copied": "כתובת התפריט הועתקה ללוח",
+          "copy_error": "שגיאת העתקה",
+          "copy_error_description": "לא ניתן להעתיק את הטקסט",
+          "primary_menu_qr": "קוד QR לתפריט הראשי",
+          "additional_qr_codes": "קודי QR נוספים",
+          "all_qr_codes": "כל קודי ה-QR",
+          "recently_created": "נוצרו לאחרונה",
+          "menu_url": "כתובת התפריט",
+          "share_menu": "שתף תפריט",
+          "share": "שתף",
+          "qr_code_tips": "טיפים לקוד QR",
+          "qr_tip_1": "הדפס והצב במקומות בולטים",
+          "qr_tip_2": "שלב בחומרי שיווק",
+          "qr_tip_3": "וודא שהקוד נראה וקריא בבירור",
+          "no_additional_qr_codes": "אין קודי QR נוספים",
+          "no_qr_codes_description": "צור קודי QR נוספים למטרות שיווק או שימוש במיקומים שונים",
+          "create_qr_code": "צור קוד QR",
+          "create_qr_code_description": "צור קוד QR שיוביל לתפריט המסעדה שלך",
+          "qr_code_label": "תווית קוד QR",
+          "qr_code_label_placeholder": "לדוגמה: עבור שולחן 1, לובי, חומרי פרסום",
+          "create": "צור",
+          "confirm_delete": "אשר מחיקה",
+          "delete_qr_code_confirmation": "האם אתה בטוח שברצונך למחוק את קוד ה-QR הזה?",
+          "qr_regenerated": "קוד QR חודש",
+          "qr_regenerated_description": "קוד ה-QR חודש בהצלחה",
+          "access_denied": "הגישה נדחתה",
+          "no_access_to_restaurant": "אין לך גישה למסעדה זו",
+          "restaurant_not_found": "מסעדה לא נמצאה",
+          "restaurant_not_found_description": "המסעדה המבוקשת לא נמצאה",
+          "display_order": "סדר הצגה",
+          "location": "מיקום",
+          "created_at": "נוצר ב",
+          "menu_management": "ניהול תפריט",
+          "system_management": "ניהול מערכת",
+          "restaurant_management": "ניהול מסעדה"
+        };
+        
+        const englishTranslations = {
+          "dashboard": "Dashboard",
+          "restaurants": "Restaurants",
+          "users": "Users",
+          "categories": "Categories",
+          "statistics": "Statistics",
+          "settings": "Settings",
+          "logout": "Logout",
+          "search": "Search...",
+          "add_restaurant": "Add Restaurant",
+          "total_restaurants": "Total Restaurants",
+          "active_users": "Active Users",
+          "qr_scans": "QR Scans",
+          "menu_items": "Menu Items",
+          "from_last_month": "from last month",
+          "recent_restaurants": "Recent Restaurants",
+          "name": "Name",
+          "manager": "Manager",
+          "status": "Status",
+          "items": "Items",
+          "scans": "Scans",
+          "actions": "Actions",
+          "active": "Active",
+          "inactive": "Inactive",
+          "setup": "Setup",
+          "recent_activity": "Recent Activity",
+          "view_all_activity": "View All Activity",
+          "restaurant_details": "Restaurant Details",
+          "restaurant_logo": "Restaurant Logo",
+          "upload_logo": "Upload Logo",
+          "remove": "Remove",
+          "restaurant_name": "Restaurant Name",
+          "description": "Description",
+          "phone": "Phone",
+          "address": "Address",
+          "social_media": "Social Media",
+          "interface_colors": "Interface Colors",
+          "primary_color": "Primary Color",
+          "secondary_color": "Secondary Color",
+          "menu_categories": "Menu Categories",
+          "add_category": "Add Category",
+          "save_changes": "Save Changes",
+          "preview": "Preview",
+          "qr_code_menu": "QR Code for Menu",
+          "generate_qr": "Generate New QR",
+          "download": "Download",
+          "print": "Print",
+          "qr_description": "Create a QR code for your menu so customers can access it quickly. The code updates automatically when you update your menu.",
+          "category_name": "Category Name",
+          "category_icon": "Icon",
+          "category_items": "Items in Category",
+          "show_all_items": "Show All Items",
+          "cancel": "Cancel",
+          "save": "Save",
+          "menu_share_text": "Check out the menu at",
+          "add_restaurant_title": "Add New Restaurant",
+          "add_item_title": "Add Menu Item",
+          "add_category_title": "Add Category",
+          "edit_restaurant_title": "Edit Restaurant",
+          "edit_item_title": "Edit Menu Item",
+          "edit_category_title": "Edit Category",
+          "delete_confirmation": "Are you sure you want to delete?",
+          "delete": "Delete",
+          "username": "Username",
+          "password": "Password",
+          "email": "Email",
+          "role": "Role",
+          "super_admin": "Super Admin",
+          "restaurant_admin": "Restaurant Admin",
+          "login": "Login",
+          "general": "General",
+          "menu_editor": "Menu Editor",
+          "appearance": "Appearance",
+          "qr_codes": "QR Codes",
+          "price": "Price",
+          "price_shekel": "Price (₪)",
+          "discount_price": "Discount Price (₪)",
+          "item_name": "Item Name",
+          "item_image": "Item Image",
+          "upload_image": "Upload Image",
+          "featured_item": "Featured Item",
+          "copied_to_clipboard": "Copied to clipboard",
+          "menu_url_copied": "Menu URL copied to clipboard",
+          "copy_error": "Copy Error",
+          "copy_error_description": "Could not copy text",
+          "primary_menu_qr": "Primary Menu QR Code",
+          "additional_qr_codes": "Additional QR Codes",
+          "all_qr_codes": "All QR Codes",
+          "recently_created": "Recently Created",
+          "menu_url": "Menu URL",
+          "share_menu": "Share Menu",
+          "share": "Share",
+          "qr_code_tips": "QR Code Tips",
+          "qr_tip_1": "Print and place in visible locations",
+          "qr_tip_2": "Include in marketing materials",
+          "qr_tip_3": "Ensure code is clearly visible and readable",
+          "no_additional_qr_codes": "No Additional QR Codes",
+          "no_qr_codes_description": "Create additional QR codes for marketing purposes or different locations",
+          "create_qr_code": "Create QR Code",
+          "create_qr_code_description": "Create a QR code that links to your restaurant menu",
+          "qr_code_label": "QR Code Label",
+          "qr_code_label_placeholder": "e.g., For Table 1, Lobby, Marketing Materials",
+          "create": "Create",
+          "confirm_delete": "Confirm Delete",
+          "delete_qr_code_confirmation": "Are you sure you want to delete this QR code?",
+          "qr_regenerated": "QR Code Regenerated",
+          "qr_regenerated_description": "QR code has been successfully regenerated",
+          "access_denied": "Access Denied",
+          "no_access_to_restaurant": "You don't have access to this restaurant",
+          "restaurant_not_found": "Restaurant Not Found",
+          "restaurant_not_found_description": "The requested restaurant was not found",
+          "display_order": "Display Order",
+          "location": "Location",
+          "created_at": "Created At",
+          "menu_management": "Menu Management",
+          "system_management": "System Management",
+          "restaurant_management": "Restaurant Management"
+        };
+        
+        // Arabic translations
+        const arabicTranslations = {
+          "dashboard": "لوحة التحكم",
+          "restaurants": "المطاعم",
+          "users": "المستخدمين",
+          "categories": "الفئات",
+          "statistics": "الإحصائيات",
+          "settings": "الإعدادات",
+          "logout": "تسجيل الخروج",
+          "search": "بحث...",
+          "add_restaurant": "إضافة مطعم",
+          "total_restaurants": "إجمالي المطاعم",
+          "active_users": "المستخدمين النشطين",
+          "qr_scans": "مسح رمز QR",
+          "menu_items": "عناصر القائمة",
+          "from_last_month": "من الشهر الماضي",
+          "recent_restaurants": "المطاعم الأخيرة",
+          "name": "الاسم",
+          "manager": "المدير",
+          "status": "الحالة",
+          "items": "العناصر",
+          "scans": "عمليات المسح",
+          "actions": "الإجراءات",
+          "active": "نشط",
+          "inactive": "غير نشط",
+          "setup": "إعداد",
+          "recent_activity": "النشاط الأخير",
+          "view_all_activity": "عرض كل النشاط",
+          "restaurant_details": "تفاصيل المطعم",
+          "restaurant_logo": "شعار المطعم",
+          "upload_logo": "تحميل الشعار",
+          "remove": "إزالة",
+          "restaurant_name": "اسم المطعم",
+          "description": "الوصف",
+          "phone": "الهاتف",
+          "address": "العنوان",
+          "social_media": "وسائل التواصل الاجتماعي",
+          "interface_colors": "ألوان الواجهة",
+          "primary_color": "اللون الأساسي",
+          "secondary_color": "اللون الثانوي",
+          "menu_categories": "فئات القائمة",
+          "add_category": "إضافة فئة",
+          "save_changes": "حفظ التغييرات",
+          "preview": "معاينة",
+          "qr_code_menu": "رمز QR للقائمة",
+          "generate_qr": "إنشاء رمز QR جديد",
+          "download": "تنزيل",
+          "print": "طباعة",
+          "qr_description": "قم بإنشاء رمز QR لقائمتك حتى يتمكن العملاء من الوصول إليها بسرعة. يتم تحديث الرمز تلقائيًا عند تحديث القائمة.",
+          "category_name": "اسم الفئة",
+          "category_icon": "أيقونة",
+          "category_items": "عناصر في الفئة",
+          "show_all_items": "عرض كل العناصر",
+          "cancel": "إلغاء",
+          "save": "حفظ",
+          "menu_share_text": "اطلع على القائمة في",
+          "add_restaurant_title": "إضافة مطعم جديد",
+          "add_item_title": "إضافة عنصر قائمة",
+          "add_category_title": "إضافة فئة",
+          "edit_restaurant_title": "تعديل المطعم",
+          "edit_item_title": "تعديل عنصر القائمة",
+          "edit_category_title": "تعديل الفئة",
+          "delete_confirmation": "هل أنت متأكد أنك تريد الحذف؟",
+          "delete": "حذف",
+          "username": "اسم المستخدم",
+          "password": "كلمة المرور",
+          "email": "البريد الإلكتروني",
+          "role": "الدور",
+          "super_admin": "مدير عام",
+          "restaurant_admin": "مدير مطعم",
+          "login": "تسجيل الدخول",
+          "general": "عام",
+          "menu_editor": "محرر القائمة",
+          "appearance": "المظهر",
+          "qr_codes": "رموز QR",
+          "price": "السعر",
+          "price_shekel": "السعر (₪)",
+          "discount_price": "سعر الخصم (₪)",
+          "item_name": "اسم العنصر",
+          "item_image": "صورة العنصر",
+          "upload_image": "تحميل صورة",
+          "featured_item": "عنصر مميز",
+          "display_order": "ترتيب العرض",
+          "location": "الموقع",
+          "created_at": "تم الإنشاء في",
+          "menu_management": "إدارة القائمة",
+          "system_management": "إدارة النظام",
+          "restaurant_management": "إدارة المطعم"
+        };
+        
+        let selectedTranslations;
+        if (language === "he") {
+          selectedTranslations = hebrewTranslations;
+        } else if (language === "ar") {
+          selectedTranslations = arabicTranslations;
+        } else {
+          selectedTranslations = englishTranslations;
+        }
+        
+        setTranslations(selectedTranslations);
+      } catch (error) {
+        console.error("Error loading translations:", error);
+      }
+    };
+
+    loadTranslations();
+  }, [language]);
+
+  const dir: Direction = language === "he" || language === "ar" ? "rtl" : "ltr";
+
+  const t = (key: string): string => {
+    return translations[key] || key;
+  };
+
+  return (
+    <LocaleContext.Provider
+      value={{
+        language,
+        setLanguage,
+        dir,
+        t
+      }}
+    >
+      {children}
+    </LocaleContext.Provider>
+  );
+}
+
+export function useLocale() {
+  const context = useContext(LocaleContext);
+  if (context === undefined) {
+    throw new Error("useLocale must be used within a LocaleProvider");
+  }
+  return context;
+}
