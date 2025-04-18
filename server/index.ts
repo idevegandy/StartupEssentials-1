@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { seedInitialData } from "./seed";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +38,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize the database with seed data if needed
+  try {
+    await seedInitialData();
+  } catch (error) {
+    console.error("Failed to seed the database:", error);
+    // We'll continue anyway, as the app might still work without seed data
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -44,7 +53,7 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    console.error(err);
   });
 
   // importantly only setup vite in development and after

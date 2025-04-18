@@ -1,187 +1,492 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertProjectSchema, insertFileSchema, insertIssueSchema } from "@shared/schema";
+import { setupAuth, hashPassword } from "./auth";
+import { json } from "express";
+import path from "path";
+import { insertRestaurantSchema, insertUserSchema, insertCategorySchema, insertItemSchema } from "@shared/schema";
+import { randomBytes } from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Authentication routes
-  app.post("/api/auth/register", async (req, res) => {
+  // Setup authentication
+  const { checkRole, checkRestaurantAccess } = setupAuth(app);
+  
+  // Super Admin Routes
+  
+  // Get all restaurants
+  app.get("/api/restaurants", checkRole(['super_admin']), async (req, res) => {
     try {
-      const validatedData = insertUserSchema.parse(req.body);
-      const user = await storage.createUser(validatedData);
+      const restaurants = await storage.getRestaurants();
       
-      // Remove password from response
-      const { password, ...userWithoutPassword } = user;
+      // Get admin for each restaurant
+      const restaurantsWithAdmins = await Promise.all(
+        restaurants.map(async (restaurant) => {
+          const admin = await storage.getRestaurantAdmin(restaurant.id);
+          return {
+            ...restaurant,
+            admin
+          };
+        })
+      );
       
-      res.status(201).json(userWithoutPassword);
+      res.json(restaurantsWithAdmins);
     } catch (error) {
-      res.status(400).json({ message: "Invalid user data" });
+      console.error("Error fetching restaurants:", error);
+      res.status(500).json({ message: "Failed to fetch restaurants" });
     }
   });
-
-  app.post("/api/auth/login", async (req, res) => {
+  
+  // Create a new restaurant with admin
+  app.post("/api/restaurants", checkRole(['super_admin']), async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { restaurant, admin } = req.body;
       
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
+      // Validate data
+      const validRestaurant = insertRestaurantSchema.parse(restaurant);
+      const validAdmin = insertUserSchema.parse({
+        ...admin,
+        role: 'restaurant_admin'
+      });
+      
+      // Check for duplicate slug
+      const existingRestaurant = await storage.getRestaurantBySlug(validRestaurant.slug);
+      if (existingRestaurant) {
+        return res.status(400).json({ message: "Restaurant URL slug already exists" });
       }
       
-      const user = await storage.getUserByUsername(username);
-      
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
+      // Check for duplicate email
+      const existingUser = await storage.getUserByEmail(validAdmin.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Admin email already exists" });
       }
       
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
+      // Create restaurant
+      const createdRestaurant = await storage.createRestaurant(validRestaurant);
       
-      res.status(200).json(userWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-
-  // Projects routes
-  app.get("/api/projects", async (req, res) => {
-    try {
-      const projects = await storage.getProjects();
-      res.status(200).json(projects);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching projects" });
-    }
-  });
-
-  app.post("/api/projects", async (req, res) => {
-    try {
-      const validatedData = insertProjectSchema.parse(req.body);
-      const project = await storage.createProject(validatedData);
-      res.status(201).json(project);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid project data" });
-    }
-  });
-
-  app.get("/api/projects/:id", async (req, res) => {
-    try {
-      const projectId = parseInt(req.params.id);
-      const project = await storage.getProject(projectId);
+      // Create admin user for the restaurant
+      const hashedPassword = await hashPassword(validAdmin.password);
+      const createdAdmin = await storage.createUser({
+        ...validAdmin,
+        password: hashedPassword,
+        restaurantId: createdRestaurant.id
+      });
       
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+      res.status(201).json({
+        restaurant: createdRestaurant,
+        admin: {
+          ...createdAdmin,
+          password: undefined
+        }
+      });
+    } catch (error) {
+      console.error("Error creating restaurant:", error);
+      res.status(500).json({ message: "Failed to create restaurant" });
+    }
+  });
+  
+  // Get a single restaurant
+  app.get("/api/restaurants/:id", checkRole(['super_admin', 'restaurant_admin']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // For restaurant admins, check if they own the restaurant
+      if (req.user.role === 'restaurant_admin' && req.user.restaurantId !== id) {
+        return res.status(403).json({ message: "Unauthorized access to restaurant" });
       }
       
-      res.status(200).json(project);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching project" });
-    }
-  });
-
-  // Files routes
-  app.get("/api/projects/:projectId/files", async (req, res) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      const files = await storage.getFilesByProject(projectId);
-      res.status(200).json(files);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching files" });
-    }
-  });
-
-  app.post("/api/files", async (req, res) => {
-    try {
-      const validatedData = insertFileSchema.parse(req.body);
-      const file = await storage.createFile(validatedData);
-      res.status(201).json(file);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid file data" });
-    }
-  });
-
-  app.get("/api/files/:id", async (req, res) => {
-    try {
-      const fileId = parseInt(req.params.id);
-      const file = await storage.getFile(fileId);
-      
-      if (!file) {
-        return res.status(404).json({ message: "File not found" });
+      const restaurant = await storage.getRestaurant(id);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
       }
       
-      res.status(200).json(file);
+      // Get admin details
+      const admin = await storage.getRestaurantAdmin(restaurant.id);
+      
+      res.json({
+        ...restaurant,
+        admin: admin ? {
+          ...admin,
+          password: undefined
+        } : null
+      });
     } catch (error) {
-      res.status(500).json({ message: "Error fetching file" });
+      console.error("Error fetching restaurant:", error);
+      res.status(500).json({ message: "Failed to fetch restaurant" });
     }
   });
-
-  app.put("/api/files/:id", async (req, res) => {
+  
+  // Update a restaurant
+  app.put("/api/restaurants/:id", checkRole(['super_admin', 'restaurant_admin']), async (req, res) => {
     try {
-      const fileId = parseInt(req.params.id);
-      const file = await storage.getFile(fileId);
+      const id = parseInt(req.params.id);
       
-      if (!file) {
-        return res.status(404).json({ message: "File not found" });
+      // For restaurant admins, check if they own the restaurant
+      if (req.user.role === 'restaurant_admin' && req.user.restaurantId !== id) {
+        return res.status(403).json({ message: "Unauthorized access to restaurant" });
       }
       
-      const updatedFile = await storage.updateFile(fileId, req.body);
-      res.status(200).json(updatedFile);
-    } catch (error) {
-      res.status(500).json({ message: "Error updating file" });
-    }
-  });
-
-  // Issues routes
-  app.get("/api/files/:fileId/issues", async (req, res) => {
-    try {
-      const fileId = parseInt(req.params.fileId);
-      const issues = await storage.getIssuesByFile(fileId);
-      res.status(200).json(issues);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching issues" });
-    }
-  });
-
-  app.post("/api/issues", async (req, res) => {
-    try {
-      const validatedData = insertIssueSchema.parse(req.body);
-      const issue = await storage.createIssue(validatedData);
-      res.status(201).json(issue);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid issue data" });
-    }
-  });
-
-  app.put("/api/issues/:id", async (req, res) => {
-    try {
-      const issueId = parseInt(req.params.id);
-      const issue = await storage.getIssue(issueId);
-      
-      if (!issue) {
-        return res.status(404).json({ message: "Issue not found" });
+      const restaurant = await storage.getRestaurant(id);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
       }
       
-      const updatedIssue = await storage.updateIssue(issueId, req.body);
-      res.status(200).json(updatedIssue);
+      // Update restaurant
+      const updatedRestaurant = await storage.updateRestaurant(id, req.body);
+      
+      res.json(updatedRestaurant);
     } catch (error) {
-      res.status(500).json({ message: "Error updating issue" });
+      console.error("Error updating restaurant:", error);
+      res.status(500).json({ message: "Failed to update restaurant" });
     }
   });
-
-  app.delete("/api/issues/:id", async (req, res) => {
+  
+  // Delete a restaurant
+  app.delete("/api/restaurants/:id", checkRole(['super_admin']), async (req, res) => {
     try {
-      const issueId = parseInt(req.params.id);
-      const issue = await storage.getIssue(issueId);
+      const id = parseInt(req.params.id);
       
-      if (!issue) {
-        return res.status(404).json({ message: "Issue not found" });
+      const restaurant = await storage.getRestaurant(id);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
       }
       
-      await storage.deleteIssue(issueId);
-      res.status(204).end();
+      // Find and delete associated admin
+      const admin = await storage.getRestaurantAdmin(id);
+      if (admin) {
+        await storage.deleteUser(admin.id);
+      }
+      
+      // Delete the restaurant
+      await storage.deleteRestaurant(id);
+      
+      res.status(200).json({ message: "Restaurant and admin deleted successfully" });
     } catch (error) {
-      res.status(500).json({ message: "Error deleting issue" });
+      console.error("Error deleting restaurant:", error);
+      res.status(500).json({ message: "Failed to delete restaurant" });
     }
   });
-
+  
+  // Reset admin password
+  app.post("/api/restaurants/:id/reset-password", checkRole(['super_admin']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Find admin associated with this restaurant
+      const admin = await storage.getRestaurantAdmin(id);
+      if (!admin) {
+        return res.status(404).json({ message: "Restaurant admin not found" });
+      }
+      
+      // Generate a random password or use provided one
+      const newPassword = req.body.password || randomBytes(8).toString('hex');
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update admin's password
+      await storage.updateUser(admin.id, { 
+        password: hashedPassword 
+      });
+      
+      res.json({ 
+        message: "Password reset successfully", 
+        email: admin.email,
+        password: newPassword 
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+  
+  // Category Routes
+  
+  // Get categories for a restaurant
+  app.get("/api/restaurants/:restaurantId/categories", async (req, res) => {
+    try {
+      const restaurantId = parseInt(req.params.restaurantId);
+      
+      // Check if restaurant exists
+      const restaurant = await storage.getRestaurant(restaurantId);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+      
+      // If logged in as restaurant admin, check if they own this restaurant
+      if (req.isAuthenticated() && req.user.role === 'restaurant_admin' && req.user.restaurantId !== restaurantId) {
+        return res.status(403).json({ message: "Unauthorized access to restaurant categories" });
+      }
+      
+      const categories = await storage.getCategories(restaurantId);
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+  
+  // Create a category
+  app.post("/api/restaurants/:restaurantId/categories", checkRole(['super_admin', 'restaurant_admin']), async (req, res) => {
+    try {
+      const restaurantId = parseInt(req.params.restaurantId);
+      
+      // For restaurant admins, check if they own the restaurant
+      if (req.user.role === 'restaurant_admin' && req.user.restaurantId !== restaurantId) {
+        return res.status(403).json({ message: "Unauthorized access to restaurant" });
+      }
+      
+      // Check if restaurant exists
+      const restaurant = await storage.getRestaurant(restaurantId);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+      
+      // Validate and create category
+      const validCategory = insertCategorySchema.parse({
+        ...req.body,
+        restaurantId
+      });
+      
+      const category = await storage.createCategory(validCategory);
+      res.status(201).json(category);
+    } catch (error) {
+      console.error("Error creating category:", error);
+      res.status(500).json({ message: "Failed to create category" });
+    }
+  });
+  
+  // Update a category
+  app.put("/api/categories/:id", checkRole(['super_admin', 'restaurant_admin']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Get the category
+      const category = await storage.getCategory(id);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      // For restaurant admins, check if they own the restaurant this category belongs to
+      if (req.user.role === 'restaurant_admin' && req.user.restaurantId !== category.restaurantId) {
+        return res.status(403).json({ message: "Unauthorized access to category" });
+      }
+      
+      // Update category
+      const updatedCategory = await storage.updateCategory(id, req.body);
+      
+      res.json(updatedCategory);
+    } catch (error) {
+      console.error("Error updating category:", error);
+      res.status(500).json({ message: "Failed to update category" });
+    }
+  });
+  
+  // Delete a category
+  app.delete("/api/categories/:id", checkRole(['super_admin', 'restaurant_admin']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Get the category
+      const category = await storage.getCategory(id);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      // For restaurant admins, check if they own the restaurant this category belongs to
+      if (req.user.role === 'restaurant_admin' && req.user.restaurantId !== category.restaurantId) {
+        return res.status(403).json({ message: "Unauthorized access to category" });
+      }
+      
+      // Delete category
+      await storage.deleteCategory(id);
+      
+      res.status(200).json({ message: "Category deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+  
+  // Item Routes
+  
+  // Get items for a category
+  app.get("/api/categories/:categoryId/items", async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      
+      // Check if category exists
+      const category = await storage.getCategory(categoryId);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      // If logged in as restaurant admin, check if they own this restaurant
+      if (req.isAuthenticated() && req.user.role === 'restaurant_admin' && req.user.restaurantId !== category.restaurantId) {
+        return res.status(403).json({ message: "Unauthorized access to category items" });
+      }
+      
+      const items = await storage.getItems(categoryId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+      res.status(500).json({ message: "Failed to fetch items" });
+    }
+  });
+  
+  // Get all items for a restaurant
+  app.get("/api/restaurants/:restaurantId/items", async (req, res) => {
+    try {
+      const restaurantId = parseInt(req.params.restaurantId);
+      
+      // Check if restaurant exists
+      const restaurant = await storage.getRestaurant(restaurantId);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+      
+      // If logged in as restaurant admin, check if they own this restaurant
+      if (req.isAuthenticated() && req.user.role === 'restaurant_admin' && req.user.restaurantId !== restaurantId) {
+        return res.status(403).json({ message: "Unauthorized access to restaurant items" });
+      }
+      
+      const items = await storage.getItemsByRestaurant(restaurantId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+      res.status(500).json({ message: "Failed to fetch items" });
+    }
+  });
+  
+  // Create an item
+  app.post("/api/categories/:categoryId/items", checkRole(['super_admin', 'restaurant_admin']), async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      
+      // Check if category exists
+      const category = await storage.getCategory(categoryId);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      // For restaurant admins, check if they own the restaurant this category belongs to
+      if (req.user.role === 'restaurant_admin' && req.user.restaurantId !== category.restaurantId) {
+        return res.status(403).json({ message: "Unauthorized access to category" });
+      }
+      
+      // Validate and create item
+      const validItem = insertItemSchema.parse({
+        ...req.body,
+        categoryId
+      });
+      
+      const item = await storage.createItem(validItem);
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error creating item:", error);
+      res.status(500).json({ message: "Failed to create item" });
+    }
+  });
+  
+  // Update an item
+  app.put("/api/items/:id", checkRole(['super_admin', 'restaurant_admin']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Get the item
+      const item = await storage.getItem(id);
+      if (!item) {
+        return res.status(404).json({ message: "Item not found" });
+      }
+      
+      // Get the category to check restaurant ownership
+      const category = await storage.getCategory(item.categoryId);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      // For restaurant admins, check if they own the restaurant this item belongs to
+      if (req.user.role === 'restaurant_admin' && req.user.restaurantId !== category.restaurantId) {
+        return res.status(403).json({ message: "Unauthorized access to item" });
+      }
+      
+      // Update item
+      const updatedItem = await storage.updateItem(id, req.body);
+      
+      res.json(updatedItem);
+    } catch (error) {
+      console.error("Error updating item:", error);
+      res.status(500).json({ message: "Failed to update item" });
+    }
+  });
+  
+  // Delete an item
+  app.delete("/api/items/:id", checkRole(['super_admin', 'restaurant_admin']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Get the item
+      const item = await storage.getItem(id);
+      if (!item) {
+        return res.status(404).json({ message: "Item not found" });
+      }
+      
+      // Get the category to check restaurant ownership
+      const category = await storage.getCategory(item.categoryId);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      // For restaurant admins, check if they own the restaurant this item belongs to
+      if (req.user.role === 'restaurant_admin' && req.user.restaurantId !== category.restaurantId) {
+        return res.status(403).json({ message: "Unauthorized access to item" });
+      }
+      
+      // Delete item
+      await storage.deleteItem(id);
+      
+      res.status(200).json({ message: "Item deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      res.status(500).json({ message: "Failed to delete item" });
+    }
+  });
+  
+  // Public Menu Route
+  
+  // Get public menu data by slug
+  app.get("/api/menus/:slug", async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      
+      // Find the restaurant by slug
+      const restaurant = await storage.getRestaurantBySlug(slug);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+      
+      // Get all categories
+      const categories = await storage.getCategories(restaurant.id);
+      
+      // Get all items for each category
+      const categoriesWithItems = await Promise.all(
+        categories.map(async (category) => {
+          const items = await storage.getItems(category.id);
+          return {
+            ...category,
+            items
+          };
+        })
+      );
+      
+      res.json({
+        restaurant,
+        categories: categoriesWithItems
+      });
+    } catch (error) {
+      console.error("Error fetching menu:", error);
+      res.status(500).json({ message: "Failed to fetch menu" });
+    }
+  });
+  
+  // Create http server
   const httpServer = createServer(app);
 
   return httpServer;
