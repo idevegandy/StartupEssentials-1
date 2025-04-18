@@ -16,6 +16,8 @@ type AuthContextType = {
   logoutMutation: UseMutationResult<void, Error, void>;
 };
 
+// The frontend uses "email" but the backend expects "username"
+// We need to make sure we're sending the right field names
 type LoginData = {
   email: string;
   password: string;
@@ -37,7 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       try {
-        const res = await apiRequest("POST", "/api/login", credentials);
+        // Map frontend field "email" to the backend expected field "username"
+        const serverData = {
+          username: credentials.email,
+          password: credentials.password
+        };
+        
+        const res = await apiRequest("POST", "/api/login", serverData);
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.message || "אימייל או סיסמה שגויים");
