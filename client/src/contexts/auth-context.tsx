@@ -18,6 +18,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  restaurantId?: number; // Added for direct restaurant admin access
   restaurants?: Restaurant[];
 }
 

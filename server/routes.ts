@@ -140,6 +140,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Update restaurant status (active/inactive)
+  app.patch("/api/restaurants/:id", checkRole(['super_admin']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      const restaurant = await storage.getRestaurant(id);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+      
+      // If toggling active status, log it
+      if ('isActive' in req.body) {
+        console.log(`Toggling restaurant ${id} active status to: ${req.body.isActive}`);
+      }
+      
+      // Update restaurant
+      const updatedRestaurant = await storage.updateRestaurant(id, req.body);
+      
+      res.json(updatedRestaurant);
+    } catch (error) {
+      console.error("Error updating restaurant status:", error);
+      res.status(500).json({ message: "Failed to update restaurant status" });
+    }
+  });
+  
   // Delete a restaurant
   app.delete("/api/restaurants/:id", checkRole(['super_admin']), async (req, res) => {
     try {
