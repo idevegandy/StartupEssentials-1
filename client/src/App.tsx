@@ -28,6 +28,8 @@ function Router() {
       {/* Super Admin Routes */}
       <ProtectedRoute path="/" component={SuperAdminDashboard} roles={['super_admin']} />
       <ProtectedRoute path="/restaurants" component={RestaurantsList} roles={['super_admin']} />
+      <ProtectedRoute path="/super-admin/dashboard" component={SuperAdminDashboard} roles={['super_admin']} />
+      <ProtectedRoute path="/super-admin/restaurants" component={RestaurantsList} roles={['super_admin']} />
       
       {/* Restaurant Admin Routes */}
       <ProtectedRoute path="/restaurant-admin/dashboard" component={RestaurantAdminDashboard} roles={['restaurant_admin']} />
