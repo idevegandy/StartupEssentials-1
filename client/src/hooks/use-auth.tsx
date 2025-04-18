@@ -39,13 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       try {
-        // Map frontend field "email" to the backend expected field "username"
-        const serverData = {
-          username: credentials.email,
-          password: credentials.password
-        };
-        
-        const res = await apiRequest("POST", "/api/login", serverData);
+        // The server expects "email" field as configured in LocalStrategy({ usernameField: 'email' })
+        // Just pass the credentials directly as they already have email and password
+        const res = await apiRequest("POST", "/api/login", credentials);
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.message || "אימייל או סיסמה שגויים");
