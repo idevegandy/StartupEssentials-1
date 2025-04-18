@@ -2,6 +2,7 @@ import { useState, ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import {
   LayoutDashboard,
   Store,
@@ -13,6 +14,9 @@ import {
   Settings,
   PanelLeft,
   Globe,
+  Users,
+  PieChart,
+  Languages,
 } from "lucide-react";
 import { 
   DropdownMenu,
@@ -32,6 +36,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState('he');
+  const { toast } = useToast();
 
   const isActive = (path: string) => {
     return location === path;
@@ -39,6 +45,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const handleLogout = () => {
     logoutMutation.mutate();
+  };
+  
+  const handleLanguageChange = (language: string) => {
+    setCurrentLanguage(language);
+    // Here we would normally call a function to change the application language
+    // For now, we'll just show a toast notification
+    toast({
+      title: "שפה שונתה / Language Changed",
+      description: language === 'he' ? "עברית נבחרה כשפת המערכת" : 
+                   language === 'en' ? "English selected as system language" :
+                   "تم اختيار العربية كلغة النظام",
+      duration: 3000,
+    });
+    
+    // Close the dropdown
+    document.body.click();
   };
 
   // Determine menu items based on user role
@@ -120,16 +142,34 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
-                  <LogOut className="ml-2 h-4 w-4" />
-                  <span>התנתק</span>
+                {/* Language selector submenu - for all users */}
+                <DropdownMenuItem className="cursor-pointer">
+                  <Languages className="ml-2 h-4 w-4" />
+                  <span className="flex justify-between w-full">
+                    <span>שפה / Language</span>
+                    <span className="flex space-x-1">
+                      <button className="px-1 hover:text-primary" onClick={() => handleLanguageChange('he')}>עב</button>
+                      <span>|</span>
+                      <button className="px-1 hover:text-primary" onClick={() => handleLanguageChange('en')}>EN</button>
+                      <span>|</span>
+                      <button className="px-1 hover:text-primary" onClick={() => handleLanguageChange('ar')}>عر</button>
+                    </span>
+                  </span>
                 </DropdownMenuItem>
+                
+                {/* View menu - only for restaurant admins */}
                 {user?.role === "restaurant_admin" && user?.restaurantId && (
                   <DropdownMenuItem className="cursor-pointer" onClick={() => window.open(`/menus/${user?.restaurantId}`, '_blank')}>
                     <Globe className="ml-2 h-4 w-4" />
                     <span>צפה בתפריט</span>
                   </DropdownMenuItem>
                 )}
+                
+                {/* Logout - for all users */}
+                <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
+                  <LogOut className="ml-2 h-4 w-4" />
+                  <span>התנתק</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
