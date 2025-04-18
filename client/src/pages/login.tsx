@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Utensils } from "lucide-react";
 
 const loginFormSchema = z.object({
-  username: z.string().min(1, { message: "Username is required" }),
+  email: z.string().min(1, { message: "Email is required" }),
   password: z.string().min(1, { message: "Password is required" }),
 });
 
@@ -27,14 +27,14 @@ export default function Login() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    const success = await login(data.username, data.password);
+    const success = await login(data.email, data.password);
     setIsLoading(false);
     
     if (success) {
@@ -61,12 +61,12 @@ export default function Login() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="username"
+                name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("username")}</FormLabel>
+                    <FormLabel>{t("email")}</FormLabel>
                     <FormControl>
-                      <Input placeholder={t("username")} {...field} />
+                      <Input placeholder={t("email")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async (): Promise<void> => {
     try {
-      await apiRequest("POST", "/api/auth/logout", undefined);
+      await apiRequest("POST", "/api/logout", undefined);
       setUser(null);
       toast({
         title: "התנתקות בוצעה בהצלחה",
