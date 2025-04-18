@@ -102,6 +102,10 @@ function ActivityLogsPage() {
         params.append('restaurantId', debouncedRestaurantIdFilter);
       }
       
+      if (activityTypeFilter) {
+        params.append('activityType', activityTypeFilter);
+      }
+      
       const response = await apiRequest('GET', `/api/activity-logs?${params.toString()}`);
       return response.json();
     }

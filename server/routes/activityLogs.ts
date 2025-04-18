@@ -24,16 +24,23 @@ router.get("/", superAdminOnly, async (req, res) => {
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
     const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
     const restaurantId = req.query.restaurantId ? parseInt(req.query.restaurantId as string) : undefined;
+    const activityType = req.query.activityType as string | undefined;
     
+    // Get logs with filters
     const logs = await storage.getActivityLogs({ 
       userId, 
       restaurantId, 
       limit, 
-      offset 
+      offset,
+      activityType
     });
     
-    // Get total count for pagination
-    const total = await storage.countActivityLogs({ userId, restaurantId });
+    // Get total count for pagination with same filters
+    const total = await storage.countActivityLogs({ 
+      userId, 
+      restaurantId,
+      activityType 
+    });
     
     res.json({
       logs,

@@ -48,11 +48,11 @@ export interface IStorage {
   deleteItem(id: number): Promise<boolean>;
   
   // Activity log operations
-  getActivityLogs(options?: { userId?: number, restaurantId?: number, limit?: number, offset?: number }): Promise<ActivityLog[]>;
+  getActivityLogs(options?: { userId?: number, restaurantId?: number, activityType?: string, limit?: number, offset?: number }): Promise<ActivityLog[]>;
   getActivityLogById(id: number): Promise<ActivityLog | undefined>;
   getActivityLogsByUser(userId: number, limit?: number, offset?: number): Promise<ActivityLog[]>;
   getActivityLogsByRestaurant(restaurantId: number, limit?: number, offset?: number): Promise<ActivityLog[]>;
-  countActivityLogs(options?: { userId?: number, restaurantId?: number }): Promise<number>;
+  countActivityLogs(options?: { userId?: number, restaurantId?: number, activityType?: string }): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -236,8 +236,8 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Activity log operations
-  async getActivityLogs(options?: { userId?: number, restaurantId?: number, limit?: number, offset?: number }): Promise<ActivityLog[]> {
-    const { userId, restaurantId, limit = 100, offset = 0 } = options || {};
+  async getActivityLogs(options?: { userId?: number, restaurantId?: number, activityType?: string, limit?: number, offset?: number }): Promise<ActivityLog[]> {
+    const { userId, restaurantId, activityType, limit = 100, offset = 0 } = options || {};
     
     let query = db.select().from(activityLogs);
     
@@ -247,6 +247,10 @@ export class DatabaseStorage implements IStorage {
     
     if (restaurantId) {
       query = query.where(eq(activityLogs.restaurantId, restaurantId));
+    }
+    
+    if (activityType) {
+      query = query.where(eq(activityLogs.activityType, activityType));
     }
     
     return await query
@@ -280,8 +284,8 @@ export class DatabaseStorage implements IStorage {
       .offset(offset);
   }
   
-  async countActivityLogs(options?: { userId?: number, restaurantId?: number }): Promise<number> {
-    const { userId, restaurantId } = options || {};
+  async countActivityLogs(options?: { userId?: number, restaurantId?: number, activityType?: string }): Promise<number> {
+    const { userId, restaurantId, activityType } = options || {};
     
     let query = db
       .select({ count: sql<number>`cast(count(*) as integer)` })
@@ -293,6 +297,10 @@ export class DatabaseStorage implements IStorage {
     
     if (restaurantId) {
       query = query.where(eq(activityLogs.restaurantId, restaurantId));
+    }
+    
+    if (activityType) {
+      query = query.where(eq(activityLogs.activityType, activityType));
     }
     
     const [result] = await query;
