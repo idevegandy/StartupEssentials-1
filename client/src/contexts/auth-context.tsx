@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("/api/auth/me", {
+        const response = await fetch("/api/user", {
           credentials: "include",
         });
 
@@ -62,12 +62,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email: username, password }),
         credentials: "include",
       });
 
@@ -82,10 +82,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data = await response.json();
-      setUser(data.user);
+      setUser(data);
       toast({
         title: "התחברות הצליחה",
-        description: `ברוך הבא, ${data.user.name}!`,
+        description: `ברוך הבא, ${data.name}!`,
       });
       return true;
     } catch (error) {
