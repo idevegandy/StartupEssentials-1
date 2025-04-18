@@ -102,7 +102,7 @@ function ActivityLogsPage() {
         params.append('restaurantId', debouncedRestaurantIdFilter);
       }
       
-      if (activityTypeFilter) {
+      if (activityTypeFilter && activityTypeFilter !== 'all') {
         params.append('activityType', activityTypeFilter);
       }
       
@@ -161,7 +161,7 @@ function ActivityLogsPage() {
                     <SelectValue placeholder="כל סוגי הפעילות" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">כל סוגי הפעילות</SelectItem>
+                    <SelectItem value="all">כל סוגי הפעילות</SelectItem>
                     <SelectItem value="login">כניסה למערכת</SelectItem>
                     <SelectItem value="logout">יציאה מהמערכת</SelectItem>
                     <SelectItem value="create_restaurant">יצירת מסעדה</SelectItem>
