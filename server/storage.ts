@@ -1,6 +1,11 @@
-import { users, restaurants, categories, items, type User, type InsertUser, type Restaurant, type InsertRestaurant, type Category, type InsertCategory, type Item, type InsertItem } from "@shared/schema";
+import { 
+  users, restaurants, categories, items, activityLogs,
+  type User, type InsertUser, type Restaurant, type InsertRestaurant, 
+  type Category, type InsertCategory, type Item, type InsertItem,
+  type ActivityLog
+} from "@shared/schema";
 import { db } from "./db";
-import { eq, and, asc, desc, isNull } from "drizzle-orm";
+import { eq, and, asc, desc, isNull, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -9,7 +14,7 @@ const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
   
   // User operations
   getUser(id: number): Promise<User | undefined>;
@@ -51,7 +56,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
   
   constructor() {
     this.sessionStore = new PostgresSessionStore({
@@ -228,6 +233,70 @@ export class DatabaseStorage implements IStorage {
   async deleteItem(id: number): Promise<boolean> {
     await db.delete(items).where(eq(items.id, id));
     return true;
+  }
+  
+  // Activity log operations
+  async getActivityLogs(options?: { userId?: number, restaurantId?: number, limit?: number, offset?: number }): Promise<ActivityLog[]> {
+    const { userId, restaurantId, limit = 100, offset = 0 } = options || {};
+    
+    let query = db.select().from(activityLogs);
+    
+    if (userId) {
+      query = query.where(eq(activityLogs.userId, userId));
+    }
+    
+    if (restaurantId) {
+      query = query.where(eq(activityLogs.restaurantId, restaurantId));
+    }
+    
+    return await query
+      .orderBy(desc(activityLogs.timestamp))
+      .limit(limit)
+      .offset(offset);
+  }
+  
+  async getActivityLogById(id: number): Promise<ActivityLog | undefined> {
+    const [log] = await db.select().from(activityLogs).where(eq(activityLogs.id, id));
+    return log;
+  }
+  
+  async getActivityLogsByUser(userId: number, limit = 100, offset = 0): Promise<ActivityLog[]> {
+    return await db
+      .select()
+      .from(activityLogs)
+      .where(eq(activityLogs.userId, userId))
+      .orderBy(desc(activityLogs.timestamp))
+      .limit(limit)
+      .offset(offset);
+  }
+  
+  async getActivityLogsByRestaurant(restaurantId: number, limit = 100, offset = 0): Promise<ActivityLog[]> {
+    return await db
+      .select()
+      .from(activityLogs)
+      .where(eq(activityLogs.restaurantId, restaurantId))
+      .orderBy(desc(activityLogs.timestamp))
+      .limit(limit)
+      .offset(offset);
+  }
+  
+  async countActivityLogs(options?: { userId?: number, restaurantId?: number }): Promise<number> {
+    const { userId, restaurantId } = options || {};
+    
+    let query = db
+      .select({ count: sql<number>`cast(count(*) as integer)` })
+      .from(activityLogs);
+    
+    if (userId) {
+      query = query.where(eq(activityLogs.userId, userId));
+    }
+    
+    if (restaurantId) {
+      query = query.where(eq(activityLogs.restaurantId, restaurantId));
+    }
+    
+    const [result] = await query;
+    return result?.count || 0;
   }
 }
 

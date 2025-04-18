@@ -7,6 +7,9 @@ import path from "path";
 import { insertRestaurantSchema, insertUserSchema, insertCategorySchema, insertItemSchema } from "@shared/schema";
 import { randomBytes } from "crypto";
 
+// Import route modules
+import activityLogsRoutes from "./routes/activityLogs";
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   const { checkRole, checkRestaurantAccess } = setupAuth(app);
