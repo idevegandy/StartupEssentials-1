@@ -15,7 +15,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { checkRole, checkRestaurantAccess } = setupAuth(app);
   
   // Register modular routes
-  app.use('/api/activities', activityLogsRoutes);
+  app.use('/api/activity-logs', activityLogsRoutes);
   
   // Super Admin Routes
   
