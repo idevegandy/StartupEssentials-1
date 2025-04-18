@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -39,15 +39,16 @@ export default function AuthPage() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
 
-  // If the user is already logged in, redirect to the appropriate dashboard
-  if (!isLoading && user) {
-    if (user.role === "super_admin") {
-      navigate("/");  // Redirect super_admin to the root path
-    } else if (user.role === "restaurant_admin") {
-      navigate("/restaurant-admin/dashboard");
+  // Setup for redirection if user is already logged in
+  useEffect(() => {
+    if (!isLoading && user) {
+      if (user.role === "super_admin") {
+        navigate("/");  // Redirect super_admin to the root path
+      } else if (user.role === "restaurant_admin") {
+        navigate("/restaurant-admin/dashboard");
+      }
     }
-    return null;
-  }
+  }, [isLoading, user, navigate]);
 
   // Setup login form
   const loginForm = useForm<LoginFormValues>({

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import AdminLayout from "@/components/layouts/admin-layout";
 import { apiRequest } from "@/lib/queryClient";
 import { RestaurantWithAdmin } from "@/lib/types";
+import AddRestaurantModal from "@/components/modals/add-restaurant-modal";
 
 export default function SuperAdminDashboard() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -137,7 +138,11 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
-      {/* TODO: Add Restaurant Dialog */}
+      {/* Add Restaurant Modal */}
+      <AddRestaurantModal 
+        isOpen={isAddDialogOpen} 
+        onClose={() => setIsAddDialogOpen(false)} 
+      />
     </AdminLayout>
   );
 }

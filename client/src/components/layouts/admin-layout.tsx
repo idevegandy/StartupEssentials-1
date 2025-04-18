@@ -46,6 +46,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     ? [
         { path: "/", label: "לוח בקרה", icon: <LayoutDashboard size={20} /> },
         { path: "/restaurants", label: "מסעדות", icon: <Store size={20} /> },
+        { path: "/super-admin/restaurants", label: "ניהול מסעדות", icon: <Store size={20} /> },
+        { path: "/super-admin/users", label: "ניהול משתמשים", icon: <Users size={20} /> },
+        { path: "/super-admin/analytics", label: "סטטיסטיקות", icon: <PieChart size={20} /> },
         { path: "/settings", label: "הגדרות", icon: <Settings size={20} /> },
       ]
     : [
