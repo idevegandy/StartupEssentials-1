@@ -1,32 +1,58 @@
-import { User, Restaurant, Category, MenuItem } from "@shared/schema";
-
-export interface RestaurantWithAdmin extends Restaurant {
-  admin?: Omit<User, 'password'>;
+export interface Project {
+  id: number;
+  name: string;
+  description?: string;
+  userId?: number;
 }
 
-export interface CategoryWithItems extends Category {
-  items: MenuItem[];
+export interface ProjectFile {
+  id: number;
+  name: string;
+  path: string;
+  content?: string;
+  projectId: number;
+  hasErrors: boolean;
+  type?: 'file' | 'folder';
 }
 
-export interface RestaurantWithMenu {
-  restaurant: Restaurant;
-  categories: CategoryWithItems[];
+export interface FileIssue {
+  id: number;
+  fileId: number;
+  line?: number;
+  column?: number;
+  severity: 'high' | 'medium' | 'low';
+  message: string;
+  code: string;
+  suggestion?: string;
 }
 
-export interface AddRestaurantFormData {
-  restaurant: {
-    name: string;
-    slug: string;
-    logo?: string;
-    status: 'active' | 'pending' | 'inactive';
-  };
-  user: {
-    name: string;
-    email: string;
-    password: string;
-  };
+export interface CodeSnippet {
+  code: string;
+  line: number;
+  column?: number;
+  highlighted?: boolean;
 }
 
-export interface FileWithPreview extends File {
-  preview: string;
+export interface IssueHighlight {
+  line: number;
+  startColumn?: number;
+  endColumn?: number;
+  code: string;
+  replacementCode?: string;
+  message: string;
+}
+
+export interface User {
+  id: number;
+  username: string;
+}
+
+export interface SidebarItem {
+  id: string;
+  name: string;
+  path: string;
+  type: 'file' | 'folder';
+  hasErrors?: boolean;
+  isActive?: boolean;
+  children?: SidebarItem[];
 }
