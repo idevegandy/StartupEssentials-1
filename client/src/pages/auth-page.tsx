@@ -42,7 +42,7 @@ export default function AuthPage() {
   // If the user is already logged in, redirect to the appropriate dashboard
   if (!isLoading && user) {
     if (user.role === "super_admin") {
-      navigate("/super-admin/dashboard");
+      navigate("/");  // Redirect super_admin to the root path
     } else if (user.role === "restaurant_admin") {
       navigate("/restaurant-admin/dashboard");
     }
@@ -63,7 +63,7 @@ export default function AuthPage() {
     loginMutation.mutate(values, {
       onSuccess: (user) => {
         if (user.role === "super_admin") {
-          navigate("/super-admin/dashboard");
+          navigate("/");  // Redirect super_admin to root path which is configured to show SuperAdminDashboard
         } else if (user.role === "restaurant_admin") {
           navigate("/restaurant-admin/dashboard");
         }
