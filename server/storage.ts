@@ -41,6 +41,13 @@ export interface IStorage {
   createItem(item: InsertItem): Promise<Item>;
   updateItem(id: number, data: Partial<InsertItem>): Promise<Item | undefined>;
   deleteItem(id: number): Promise<boolean>;
+  
+  // Activity log operations
+  getActivityLogs(options?: { userId?: number, restaurantId?: number, limit?: number, offset?: number }): Promise<ActivityLog[]>;
+  getActivityLogById(id: number): Promise<ActivityLog | undefined>;
+  getActivityLogsByUser(userId: number, limit?: number, offset?: number): Promise<ActivityLog[]>;
+  getActivityLogsByRestaurant(restaurantId: number, limit?: number, offset?: number): Promise<ActivityLog[]>;
+  countActivityLogs(options?: { userId?: number, restaurantId?: number }): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {

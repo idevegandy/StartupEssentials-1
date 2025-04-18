@@ -6,6 +6,22 @@ import { z } from "zod";
 // Role enum for user types
 export const roleEnum = pgEnum('role', ['super_admin', 'restaurant_admin']);
 
+// Activity type enum for activity logs
+export const activityTypeEnum = pgEnum('activity_type', [
+  'login',
+  'logout',
+  'create_restaurant',
+  'update_restaurant',
+  'delete_restaurant',
+  'create_category',
+  'update_category',
+  'delete_category',
+  'create_item',
+  'update_item',
+  'delete_item',
+  'update_settings'
+]);
+
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -98,6 +114,31 @@ export const itemsRelations = relations(items, ({ one }) => ({
   }),
 }));
 
+// Activity logs table
+export const activityLogs = pgTable("activity_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  activityType: activityTypeEnum("activity_type").notNull(),
+  description: text("description").notNull(),
+  metadata: json("metadata"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  restaurantId: integer("restaurant_id").references(() => restaurants.id, { onDelete: 'cascade' }),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+// Activity log relationships
+export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [activityLogs.userId],
+    references: [users.id],
+  }),
+  restaurant: one(restaurants, {
+    fields: [activityLogs.restaurantId],
+    references: [restaurants.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -123,19 +164,28 @@ export const insertItemSchema = createInsertSchema(items).omit({
   updatedAt: true,
 });
 
+// Activity log insert schema
+export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
+  id: true,
+  timestamp: true,
+});
+
 // Select schemas
 export const selectUserSchema = createSelectSchema(users);
 export const selectRestaurantSchema = createSelectSchema(restaurants);
 export const selectCategorySchema = createSelectSchema(categories);
 export const selectItemSchema = createSelectSchema(items);
+export const selectActivityLogSchema = createSelectSchema(activityLogs);
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertItem = z.infer<typeof insertItemSchema>;
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Restaurant = typeof restaurants.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Item = typeof items.$inferSelect;
+export type ActivityLog = typeof activityLogs.$inferSelect;

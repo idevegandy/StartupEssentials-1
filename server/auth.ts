@@ -145,16 +145,49 @@ export function setupAuth(app: Express) {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid email or password" });
       
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) return next(err);
+        
+        // Log the login activity
+        try {
+          const { logActivity } = await import("./services/activityLogger");
+          logActivity({
+            user,
+            activityType: "login",
+            description: `${user.name} logged in`,
+            request: req
+          });
+        } catch (logError) {
+          console.error("Error logging login:", logError);
+        }
+        
         res.status(200).json(user);
       });
     })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
+    // Capture user for logging before logout
+    const user = req.user;
+    
+    req.logout(async (err) => {
       if (err) return next(err);
+      
+      // Log the logout activity if we have a user
+      if (user) {
+        try {
+          const { logActivity } = await import("./services/activityLogger");
+          logActivity({
+            user,
+            activityType: "logout",
+            description: `${user.name} logged out`,
+            request: req
+          });
+        } catch (logError) {
+          console.error("Error logging logout:", logError);
+        }
+      }
+      
       res.sendStatus(200);
     });
   });
