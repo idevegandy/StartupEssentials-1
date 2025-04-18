@@ -83,13 +83,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       duration: 3000,
     });
     
-    // Apply language-specific styles
+    // Apply language-specific styles directly to the root element
+    const rootElement = document.documentElement;
+    
     if (language === 'he' || language === 'ar') {
-      document.body.classList.add('rtl');
-      document.body.classList.remove('ltr');
+      rootElement.style.direction = 'rtl';
+      rootElement.classList.add('rtl');
+      rootElement.classList.remove('ltr');
     } else {
-      document.body.classList.add('ltr');
-      document.body.classList.remove('rtl');
+      rootElement.style.direction = 'ltr';
+      rootElement.classList.add('ltr');
+      rootElement.classList.remove('rtl');
+    }
+    
+    // Force refresh UI
+    const appRoot = document.getElementById('root');
+    if (appRoot) {
+      appRoot.style.opacity = '0.99';
+      setTimeout(() => {
+        appRoot.style.opacity = '1';
+      }, 50);
     }
     
     // Store the selected language in localStorage for persistence
@@ -97,6 +110,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     
     // Close the dropdown
     document.body.click();
+    
+    // Reload the page to ensure all components respect the language change
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   };
 
   // Determine menu items based on user role
@@ -149,7 +167,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         : ""
                     }`}
                   >
-                    <span className="mr-2">{item.icon}</span>
+                    <span className="mr-2 text-primary-600 dark:text-primary-400">{item.icon}</span>
                     <span className={`${collapsed ? "hidden" : "block"}`}>{item.label}</span>
                   </span>
                 </Link>

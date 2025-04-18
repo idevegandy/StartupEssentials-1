@@ -38,6 +38,7 @@ export const restaurants = pgTable("restaurants", {
   facebookLink: text("facebook_link"),
   instagramLink: text("instagram_link"),
   websiteLink: text("website_link"),
+  isActive: boolean("is_active").default(true).notNull(),
   description: text("description"),
   phone: text("phone"),
   address: text("address"),
