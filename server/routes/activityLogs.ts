@@ -1,10 +1,24 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { Request, Response, NextFunction } from "express";
 
 const router = Router();
 
+// Super Admin only middleware
+const superAdminOnly = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  if (req.user && req.user.role === 'super_admin') {
+    return next();
+  }
+  
+  return res.status(403).json({ message: "Access denied. Super Admin access required." });
+};
+
 // Get all activity logs with pagination (Super Admin only)
-router.get("/", async (req, res) => {
+router.get("/", superAdminOnly, async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
@@ -37,7 +51,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get activity logs for a specific user (Super Admin only)
-router.get("/user/:userId", async (req, res) => {
+router.get("/user/:userId", superAdminOnly, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
@@ -69,7 +83,7 @@ router.get("/user/:userId", async (req, res) => {
 });
 
 // Get activity logs for a specific restaurant (Super Admin only)
-router.get("/restaurant/:restaurantId", async (req, res) => {
+router.get("/restaurant/:restaurantId", superAdminOnly, async (req, res) => {
   try {
     const restaurantId = parseInt(req.params.restaurantId);
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
