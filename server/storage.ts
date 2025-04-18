@@ -5,7 +5,7 @@ import {
   type ActivityLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, asc, desc, isNull, sql } from "drizzle-orm";
+import { eq, and, asc, desc, isNull, gte, lte, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -48,7 +48,15 @@ export interface IStorage {
   deleteItem(id: number): Promise<boolean>;
   
   // Activity log operations
-  getActivityLogs(options?: { userId?: number, restaurantId?: number, activityType?: string, limit?: number, offset?: number }): Promise<ActivityLog[]>;
+  getActivityLogs(options?: { 
+    userId?: number, 
+    restaurantId?: number, 
+    activityType?: string, 
+    limit?: number, 
+    offset?: number,
+    startDate?: Date,
+    endDate?: Date
+  }): Promise<(ActivityLog & { userName?: string, restaurantName?: string })[]>;
   getActivityLogById(id: number): Promise<ActivityLog | undefined>;
   getActivityLogsByUser(userId: number, limit?: number, offset?: number): Promise<ActivityLog[]>;
   getActivityLogsByRestaurant(restaurantId: number, limit?: number, offset?: number): Promise<ActivityLog[]>;
@@ -236,11 +244,29 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Activity log operations
-  async getActivityLogs(options?: { userId?: number, restaurantId?: number, activityType?: string, limit?: number, offset?: number }): Promise<ActivityLog[]> {
-    const { userId, restaurantId, activityType, limit = 100, offset = 0 } = options || {};
+  async getActivityLogs(options?: { 
+    userId?: number, 
+    restaurantId?: number, 
+    activityType?: string, 
+    limit?: number, 
+    offset?: number,
+    startDate?: Date,
+    endDate?: Date
+  }): Promise<(ActivityLog & { userName?: string, restaurantName?: string })[]> {
+    const { 
+      userId, 
+      restaurantId, 
+      activityType, 
+      limit = 100, 
+      offset = 0,
+      startDate,
+      endDate
+    } = options || {};
     
+    // Start with a basic query
     let query = db.select().from(activityLogs);
     
+    // Apply filters
     if (userId) {
       query = query.where(eq(activityLogs.userId, userId));
     }
@@ -250,13 +276,48 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (activityType) {
-      query = query.where(eq(activityLogs.activityType, activityType));
+      query = query.where(eq(activityLogs.activityType, activityType as any));
     }
     
-    return await query
+    if (startDate) {
+      query = query.where(gte(activityLogs.timestamp, startDate));
+    }
+    
+    if (endDate) {
+      query = query.where(lte(activityLogs.timestamp, endDate));
+    }
+    
+    // Get the logs
+    const logs = await query
       .orderBy(desc(activityLogs.timestamp))
       .limit(limit)
       .offset(offset);
+      
+    // For each log, enrich with user and restaurant information
+    const enrichedLogs = await Promise.all(
+      logs.map(async (log) => {
+        let userName: string | undefined;
+        let restaurantName: string | undefined;
+        
+        if (log.userId) {
+          const user = await this.getUser(log.userId);
+          userName = user?.name;
+        }
+        
+        if (log.restaurantId) {
+          const restaurant = await this.getRestaurant(log.restaurantId);
+          restaurantName = restaurant?.name;
+        }
+        
+        return {
+          ...log,
+          userName,
+          restaurantName
+        };
+      })
+    );
+    
+    return enrichedLogs;
   }
   
   async getActivityLogById(id: number): Promise<ActivityLog | undefined> {
