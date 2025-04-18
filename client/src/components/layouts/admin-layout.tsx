@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('he');
   const { toast } = useToast();
+  
+  // Initialize language from localStorage if available
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('preferredLanguage');
+    if (savedLanguage) {
+      setCurrentLanguage(savedLanguage);
+      // Apply language settings
+      document.documentElement.dir = savedLanguage === 'he' || savedLanguage === 'ar' ? 'rtl' : 'ltr';
+      document.documentElement.lang = savedLanguage;
+      
+      // Apply language-specific styles
+      if (savedLanguage === 'he' || savedLanguage === 'ar') {
+        document.body.classList.add('rtl');
+        document.body.classList.remove('ltr');
+      } else {
+        document.body.classList.add('ltr');
+        document.body.classList.remove('rtl');
+      }
+    }
+  }, []);
 
   const isActive = (path: string) => {
     return location === path;
@@ -49,8 +69,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   
   const handleLanguageChange = (language: string) => {
     setCurrentLanguage(language);
-    // Here we would normally call a function to change the application language
-    // For now, we'll just show a toast notification
+    
+    // Set html direction and language attributes
+    document.documentElement.dir = language === 'he' || language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+    
+    // Show a toast notification
     toast({
       title: "שפה שונתה / Language Changed",
       description: language === 'he' ? "עברית נבחרה כשפת המערכת" : 
@@ -58,6 +82,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                    "تم اختيار العربية كلغة النظام",
       duration: 3000,
     });
+    
+    // Apply language-specific styles
+    if (language === 'he' || language === 'ar') {
+      document.body.classList.add('rtl');
+      document.body.classList.remove('ltr');
+    } else {
+      document.body.classList.add('ltr');
+      document.body.classList.remove('rtl');
+    }
+    
+    // Store the selected language in localStorage for persistence
+    localStorage.setItem('preferredLanguage', language);
     
     // Close the dropdown
     document.body.click();
@@ -68,7 +104,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     ? [
         { path: "/", label: "לוח בקרה", icon: <LayoutDashboard size={20} /> },
         { path: "/restaurants", label: "מסעדות", icon: <Store size={20} /> },
-        { path: "/super-admin/restaurants", label: "ניהול מסעדות", icon: <Store size={20} /> },
+        { path: "/super-admin/qr-codes", label: "ניהול קודי QR", icon: <QrCode size={20} /> },
         { path: "/super-admin/users", label: "ניהול משתמשים", icon: <Users size={20} /> },
         { path: "/super-admin/analytics", label: "סטטיסטיקות", icon: <PieChart size={20} /> },
         { path: "/settings", label: "הגדרות", icon: <Settings size={20} /> },

@@ -105,7 +105,7 @@ export default function SuperAdminDashboard() {
                     </div>
                     <div className="flex justify-end mt-4 space-x-2">
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/restaurants/${restaurant.id}`}>
+                        <Link href={`/restaurant-admin/dashboard?id=${restaurant.id}`}>
                           נהל
                         </Link>
                       </Button>

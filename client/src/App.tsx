@@ -12,6 +12,7 @@ import SuperAdminDashboard from "@/pages/super-admin/dashboard";
 import RestaurantsList from "@/pages/super-admin/restaurants";
 import UsersManagement from "@/pages/super-admin/users";
 import AnalyticsDashboard from "@/pages/super-admin/analytics";
+import QRCodesManagement from "@/pages/super-admin/qr-codes";
 import RestaurantAdminDashboard from "@/pages/restaurant-admin/dashboard";
 import RestaurantCategories from "@/pages/restaurant-admin/categories";
 import RestaurantItems from "@/pages/restaurant-admin/items";
@@ -34,6 +35,7 @@ function Router() {
       <ProtectedRoute path="/super-admin/restaurants" component={RestaurantsList} roles={['super_admin']} />
       <ProtectedRoute path="/super-admin/users" component={UsersManagement} roles={['super_admin']} />
       <ProtectedRoute path="/super-admin/analytics" component={AnalyticsDashboard} roles={['super_admin']} />
+      <ProtectedRoute path="/super-admin/qr-codes" component={QRCodesManagement} roles={['super_admin']} />
       
       {/* Restaurant Admin Routes */}
       <ProtectedRoute path="/restaurant-admin/dashboard" component={RestaurantAdminDashboard} roles={['restaurant_admin']} />
