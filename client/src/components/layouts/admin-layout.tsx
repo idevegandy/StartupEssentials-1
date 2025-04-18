@@ -125,6 +125,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { path: "/super-admin/qr-codes", label: "ניהול קודי QR", icon: <QrCode size={20} /> },
         { path: "/super-admin/users", label: "ניהול משתמשים", icon: <Users size={20} /> },
         { path: "/super-admin/analytics", label: "סטטיסטיקות", icon: <PieChart size={20} /> },
+        { path: "/super-admin/activity-logs", label: "היסטוריית פעילות", icon: <List size={20} /> },
         { path: "/settings", label: "הגדרות", icon: <Settings size={20} /> },
       ]
     : [
